@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Профиль — учёт производства</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-title">Мебельная фабрика «Профиль»</div>
+      <div class="brand-sub">Единая система учёта производства: простои и брак</div>
+    </div>
+    <div class="topbar-actions">
+      <div id="sourceInfo" class="source-info"></div>
+      <button id="resetBtn" class="btn btn-ghost" type="button" hidden>Вернуть исходные данные</button>
+      <label class="btn btn-primary" for="fileInput">Загрузить данные</label>
+      <input id="fileInput" type="file" accept=".csv,.txt,.xlsx,.xls,.xlsm" multiple hidden>
+    </div>
+  </header>
+
+  <div id="loadReport" class="load-report" hidden></div>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" data-sheet="summary">Сводка</button>
+    <button class="tab" role="tab" data-sheet="downtime">Простои</button>
+    <button class="tab" role="tab" data-sheet="defects">Брак</button>
+    <button class="tab" role="tab" data-sheet="data">Данные</button>
+  </nav>
+
+  <section class="filters" aria-label="Фильтры">
+    <div class="filter">
+      <span class="filter-label">Период</span>
+      <div class="filter-row">
+        <input id="fFrom" type="date"> <span class="muted">—</span> <input id="fTo" type="date">
+        <div id="fPresets" class="chips"></div>
+      </div>
+    </div>
+    <div class="filter">
+      <span class="filter-label">Смена</span>
+      <div class="seg" id="fShift">
+        <button data-v="all">Обе</button><button data-v="1">День</button><button data-v="2">Ночь</button>
+      </div>
+    </div>
+    <div class="filter">
+      <span class="filter-label">Цех <span class="hint" title="В журнале брака нет цеха, поэтому фильтр по цеху влияет только на простои">(только простои)</span></span>
+      <div class="seg" id="fShop"></div>
+    </div>
+  </section>
+
+  <main>
+    <!-- ===== Сводка ===== -->
+    <section class="sheet" id="sheet-summary" data-title="Сводка">
+      <div class="sheet-head">
+        <div>
+          <h1>Сводка</h1>
+          <div class="sheet-sub filter-caption"></div>
+        </div>
+        <button class="btn btn-ghost pdf-btn" type="button">Скачать PDF</button>
+      </div>
+      <div class="kpis" id="kpis"></div>
+      <div id="summaryBody"></div>
+      <details class="assumptions" id="assumptions">
+        <summary>Допущения для расчёта времени и денег</summary>
+        <div class="assumptions-grid">
+          <label>Длительность смены, ч <input id="pShift" type="number" min="1" max="24" step="0.5"></label>
+          <label>Стоимость станко-часа простоя, ₽ <input id="pHour" type="number" min="0" step="100"></label>
+          <label>Стоимость бракованной детали, ₽ <input id="pPiece" type="number" min="0" step="100"></label>
+        </div>
+        <p class="muted small">В исходных журналах нет денег и объёма выпуска. Поэтому доступность считается от фонда времени
+          (станки × дни × смены × длительность смены), а рубли — по этим ставкам. Это оценка; ставки можно поменять, и панель пересчитается.</p>
+      </details>
+    </section>
+
+    <!-- ===== Простои ===== -->
+    <section class="sheet" id="sheet-downtime" data-title="Простои">
+      <div class="sheet-head">
+        <div>
+          <h1>Простои</h1>
+          <div class="sheet-sub filter-caption"></div>
+        </div>
+        <button class="btn btn-ghost pdf-btn" type="button">Скачать PDF</button>
+      </div>
+      <div id="downtimeBody"></div>
+    </section>
+
+    <!-- ===== Брак ===== -->
+    <section class="sheet" id="sheet-defects" data-title="Брак">
+      <div class="sheet-head">
+        <div>
+          <h1>Брак</h1>
+          <div class="sheet-sub filter-caption"></div>
+        </div>
+        <button class="btn btn-ghost pdf-btn" type="button">Скачать PDF</button>
+      </div>
+      <div id="defectsBody"></div>
+    </section>
+
+    <!-- ===== Данные ===== -->
+    <section class="sheet" id="sheet-data" data-title="Данные">
+      <div class="sheet-head">
+        <div>
+          <h1>Данные</h1>
+          <div class="sheet-sub filter-caption"></div>
+        </div>
+        <button class="btn btn-ghost pdf-btn" type="button">Скачать PDF</button>
+      </div>
+      <div class="table-tools">
+        <div class="seg" id="dKind">
+          <button data-v="downtime">Журнал простоев</button><button data-v="defects">Журнал брака</button>
+        </div>
+        <input id="dSearch" type="search" placeholder="Поиск по любому полю…">
+      </div>
+      <div id="dTotals" class="table-totals"></div>
+      <div class="table-wrap"><table id="dTable" class="data-table"></table></div>
+    </section>
+  </main>
+
+  <script src="lib/chart.umd.min.js"></script>
+  <script src="lib/xlsx.full.min.js"></script>
+  <script src="lib/html2canvas.min.js"></script>
+  <script src="lib/jspdf.umd.min.js"></script>
+  <script src="data/default-data.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/insights.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
