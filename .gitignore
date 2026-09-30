@@ -9,3 +9,6 @@ skills-lock.json
 Дизайн система/
 node_modules/
 server/data/
+app/dist-sealed/
+# переносной Node.js для архива (≈ 80 МБ) — в репозиторий не входит, скачивается скриптом tools/get-runtime.ps1
+runtime/node.exe

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 
-/** Истина, пока лист снимается в PDF: лист «Данные» на это время показывает все строки, а не одну страницу. */
+/** true, пока лист снимается в PDF (см. withExportMode в lib/pdf.ts) */
 export function useExporting() {
-  const [on, setOn] = useState(false)
+  const [on, setOn] = useState(() => typeof document !== 'undefined' && document.body.classList.contains('exporting'))
   useEffect(() => {
     const h = (e: Event) => setOn(!!(e as CustomEvent<boolean>).detail)
     window.addEventListener('profil:exporting', h)

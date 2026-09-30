@@ -22,6 +22,16 @@ const ACTION: Record<string, string> = {
   'Прочее': 'причина «Прочее» ничего не объясняет — сделать выбор конкретной причины обязательным при записи простоя.',
 }
 const action = (reason: string) => ACTION[reason] ?? ACTION['Прочее']
+// Короткая версия «что делать» — одна строка для карточки на Сводке; полная — в подробностях
+const TODO: Record<string, string> = {
+  'Ожидание заготовок': 'Сверить подачу заготовок с планом раскроя',
+  'Нет материала': 'Проверять остатки материала до начала смены',
+  'Нет оператора': 'Назначить замену оператора на каждую смену',
+  'Переналадка': 'Группировать заказы, чтобы реже переналаживать',
+  'Поломка': 'Проверить график ТО и запас расходников',
+  'Прочее': 'Запретить причину «Прочее» при записи простоя',
+}
+const todo = (reason: string) => TODO[reason] ?? TODO['Прочее']
 
 export interface MiniSeries { label: string; color: string; data: number[] }
 export interface Mini {
@@ -38,6 +48,11 @@ export interface Insight {
   title: string
   /** Одна строка с главной цифрой — для списка выводов; подробности — в body */
   headline: string
+  /** Главная цифра крупно и пояснение к ней — для карточки на Сводке */
+  metric: string
+  why: string
+  /** «Что делать» одной строкой; полная рекомендация — action */
+  todo: string
   body: Seg[]
   action: string
   mini?: Mini
@@ -118,6 +133,9 @@ function machineSpike({ F, f }: InsightCtx): Insight | null {
     level: 'crit',
     title: 'Резкий рост простоев станка ' + best.m,
     headline: hours(best.rec) + ' ч за неделю — в ' + nf(best.rec / Math.max(best.avg, 1), 1) + ' раза больше обычного; главная причина «' + topReason + '»',
+    metric: hours(best.rec) + ' ч за неделю',
+    why: 'в ' + nf(best.rec / Math.max(best.avg, 1), 1) + ' раза больше обычного · причина «' + topReason + '»',
+    todo: todo(topReason),
     body,
     action: action(topReason),
     mini: {
@@ -189,6 +207,9 @@ function defectSpike({ F, f, p, money }: InsightCtx): Insight | null {
   return {
     level: 'crit',
     headline: best.rec + ' шт за неделю — в ' + nf(best.rec / Math.max(best.prev, 1), 1) + ' раза больше среднего; основной дефект «' + topType + '»',
+    metric: best.rec + ' шт за неделю',
+    why: 'в ' + nf(best.rec / Math.max(best.prev, 1), 1) + ' раза больше среднего · дефект «' + topType + '»',
+    todo: 'Проверять первые детали после переналадки в ' + (best.shift === 1 ? 'дневную' : 'ночную') + ' смену',
     title: 'Рост брака: ' + best.op.toLowerCase() + ', ' + (best.shift === 1 ? 'дневная' : 'ночная') + ' смена',
     body,
     action:
@@ -225,6 +246,9 @@ function shiftGap({ F }: InsightCtx): Insight | null {
     level: 'warn',
     title: name(lead) + ' смена теряет больше времени',
     headline: hours(t[lead]) + ' ч против ' + hours(t[oth]) + ' ч — на ' + nf((t[lead] / t[oth] - 1) * 100) + '% больше; больше всего разницы даёт «' + re + '»',
+    metric: hours(t[lead]) + ' ч против ' + hours(t[oth]) + ' ч',
+    why: 'на ' + nf((t[lead] / t[oth] - 1) * 100) + '% больше · разницу даёт «' + re + '»',
+    todo: todo(re),
     body: [
       name(lead) + ' смена: ', b(hours(t[lead]) + ' ч'), ' внеплановых простоев против ' + hours(t[oth]) + ' ч в ' + (oth === 1 ? 'дневную' : 'ночную') +
         ' (на ' + nf((t[lead] / t[oth] - 1) * 100) + '% больше). Больше всего разницы даёт «' + re + '»: +' + hours(dv) + ' ч к другой смене.',
@@ -261,6 +285,9 @@ function overview({ F, p, s, money }: InsightCtx): Insight | null {
     level: 'info',
     title: 'Общая картина потерь',
     headline: hours(loss) + ' ч потерь; крупнейшая причина «' + reasons[0][0] + '» — ' + nf(topShare) + '%, поэтому одним решением не закрыть',
+    metric: hours(loss) + ' ч потерь',
+    why: 'крупнейшая причина «' + reasons[0][0] + '» — ' + nf(topShare) + '%: одним решением не закрыть',
+    todo: other / loss > 0.15 ? TODO['Прочее'] : 'Начать со станка-лидера и его главной причины',
     body,
     action: other / loss > 0.15 ? ACTION['Прочее'] : 'начать со станка-лидера по потерям и его главной причины (см. лист «Простои»).',
   }

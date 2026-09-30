@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build && vite build --mode server",
+    "build": "tsc --noEmit && vite build --mode sealed && vite build --mode server && node ../tools/seal.js",
     "preview": "vite preview"
   },
   "dependencies": {

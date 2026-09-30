@@ -1,6 +1,6 @@
 {
   "name": "profil-production-dashboard",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "private": true,
   "description": "Панель учёта простоев и брака мебельной фабрики «Профиль»: автономная версия и сервер с учётными записями",
   "type": "module",
@@ -8,7 +8,7 @@
   "scripts": {
     "start": "node --no-warnings server/index.js",
     "build": "npm --prefix app install && npm --prefix app run build",
-    "test": "node --no-warnings tools/test-server.js && node --no-warnings tools/e2e.js",
+    "test": "node --no-warnings tools/test-server.js && node --no-warnings tools/test-sealed.js && node --no-warnings tools/e2e.js",
     "verify": "node --no-warnings tools/verify-panel.cjs && node --no-warnings tools/verify-panel.cjs --server"
   }
 }

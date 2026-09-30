@@ -43,7 +43,7 @@ export async function renderSheetPages(sheetEl: HTMLElement, title: string, capt
   const footerPx = 44
   const contentPx = Math.floor((A4H - 2 * M) / mmPerPx) - footerPx // высота полезной части страницы
 
-  const blocks = [...sheetEl.querySelectorAll('.tile, .card, .block-title, .block-sub, .sheet-head, .table-totals, tbody tr, thead')]
+  const blocks = [...sheetEl.querySelectorAll('.view--print, .tile, .card, .block-title, .block-sub, .sheet-head, .table-totals, tbody tr, thead')]
     .map((el) => { const r = el.getBoundingClientRect(); return { t: (r.top - rect0.top) * k, b: (r.bottom - rect0.top) * k } })
     .filter((b) => b.b - b.t > 1 && b.b - b.t < contentPx * 0.95)
 

@@ -40,10 +40,11 @@ export function applyFilters(j: Journals, f: Filters): Filtered {
 
 export const shownShifts = (f: Filters): (1 | 2)[] => (f.shift === 'all' ? [1, 2] : [f.shift])
 
-export function filterCaption(f: Filters) {
+/** single — у пользователя один цех (начальник цеха): ему по цеху отобраны и простои, и брак, пометка «(простои)» не нужна */
+export function filterCaption(f: Filters, single = false) {
   const period = f.from && f.to ? ruDate(f.from) + ' — ' + ruDate(f.to) : 'весь период'
   const shift = f.shift === 'all' ? 'обе смены' : 'смена: ' + SHIFT_NAME[f.shift].toLowerCase()
-  const shop = f.shop === 'all' ? 'все цеха' : f.shop.toLowerCase() + ' (простои)'
+  const shop = f.shop === 'all' ? 'все цеха' : f.shop.toLowerCase() + (single ? '' : ' (простои)')
   return period + ' · ' + shift + ' · ' + shop
 }
 

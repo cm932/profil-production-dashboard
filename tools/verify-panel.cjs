@@ -3,7 +3,7 @@
 // сравниваются ожидаемые значения с тем, что показывает панель: KPI, суммы всех графиков, тепловая карта, лист «Данные».
 // Панель отдаёт проверяемые числа в атрибутах data-* (data-sum на каждом графике, data-loss-min на KPI и т. д.).
 // Запуск (нужен Microsoft Edge, Windows):
-//   node tools/verify-panel.cjs [путь к index.html]   — автономная панель (данные вшиты)
+//   node tools/verify-panel.cjs [путь к index.html]   — запечатанная панель: вход директором, данные расшифровываются паролем
 //   node tools/verify-panel.cjs --server              — серверная панель: сервер поднимается сам, вход директором, данные берутся из базы SQLite
 const fs = require('fs');
 const os = require('os');
@@ -103,16 +103,15 @@ for (const p of periods) for (const shift of ['all', '1', '2']) for (const shop 
     await ev(`(() => { const set = (sel, v) => { const el = document.querySelector(sel); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, v); el.dispatchEvent(new Event('input', { bubbles: true })); }; set('#loginName', 'director'); set('#loginPass', 'Director-2026!'); })()`);
     await sleep(150);
     await ev("document.querySelector('#loginSubmit').click()");
-    for (let i = 0; i < 100 && !(await ev("!!document.querySelector('#kpis')")); i++) await sleep(100);
+    for (let i = 0; i < 150 && !(await ev("!!document.querySelector('#kpis')")); i++) await sleep(100);
+    if (!(await ev("!!document.querySelector('#kpis')"))) throw new Error('Вход не удался: ' + (await ev("document.querySelector('#loginError')?.textContent || 'нет ответа'")));
   };
   await send('Runtime.enable');
   await send('Page.enable');
   await send('Emulation.setDeviceMetricsOverride', { width: 1500, height: 1100, deviceScaleFactor: 1, mobile: false });
   await send('Page.navigate', { url: PANEL_URL });
-  await sleep(2500);
-  if (SERVER_MODE) {
-    await waitLogin();
-  }
+  await sleep(1500);
+  await waitLogin();
 
   // Ждём, пока условие станет истинным (лист выехал, график отрисовался)
   const waitFor = async (cond, ms = 6000) => {
@@ -122,6 +121,7 @@ for (const p of periods) for (const shift of ['all', '1', '2']) for (const shop 
   };
   const click = (scope, text) => ev(`(() => { const b = [...document.querySelectorAll('${scope}')].find(e => e.textContent.trim() === ${JSON.stringify(text)}); if (!b) return false; b.click(); return true; })()`);
   const setDate = (idSel, v) => ev(`(() => { const el = document.querySelector('${idSel}'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, ${JSON.stringify(v)}); el.dispatchEvent(new Event('input', { bubbles: true })); })()`);
+  const view = async (label, id) => { await click('.view-tabs .tab', label); await waitFor(`!!document.querySelector('.view[data-view="${id}"]')`); await sleep(160); };
   const nav = async (label, sheet) => { await click('.nav-item', label); await waitFor(`!!document.querySelector('#sheet-${sheet}')`); await sleep(120); };
   const num = (sel, attr = 'data-sum') => `(() => { const e = document.querySelector('${sel}'); return e ? +e.getAttribute('${attr}') : 0; })()`;
 
@@ -146,15 +146,19 @@ for (const p of periods) for (const shift of ['all', '1', '2']) for (const shop 
     });
 
     await nav('Простои', 'downtime');
-    Object.assign(got, {
-      pareto_min: Math.round((await ev(num('[data-chart="pareto"]'))) * 60), machines_min: Math.round((await ev(num('[data-chart="machines-reason"]'))) * 60),
-      machShift_min: Math.round((await ev(num('[data-chart="machines-shift"]'))) * 60), heat_min: await ev(num('[data-chart="heatmap"]')),
-      plannedBox_min: await ev(num('#plannedBox', 'data-planned-min')),
-    });
+    await view('По дням', 'days');
+    Object.assign(got, { heat_min: await ev(num('[data-chart="heatmap"]')), plannedBox_min: await ev(num('#plannedBox', 'data-planned-min')) });
+    await view('Причины', 'reasons');
+    Object.assign(got, { pareto_min: Math.round((await ev(num('[data-chart="pareto"]'))) * 60), machines_min: Math.round((await ev(num('[data-chart="machines-reason"]'))) * 60) });
+    await view('День и ночь', 'shifts');
+    got.machShift_min = Math.round((await ev(num('[data-chart="machines-shift"]'))) * 60);
 
     await nav('Брак', 'defects');
+    await view('По дням', 'days');
+    Object.assign(got, { daily: await ev(num('[data-chart="daily-defects"]')), ops: await ev(num('[data-chart="ops-shift"]')) });
+    await view('По неделям', 'weeks');
     Object.assign(got, {
-      daily: await ev(num('[data-chart="daily-defects"]')), ops: await ev(num('[data-chart="ops-shift"]')), types: await ev(num('[data-chart="defect-types"]')),
+      types: await ev(num('[data-chart="defect-types"]')),
       weeks: (await ev(num('[data-chart="week-0"]'))) + (await ev(num('[data-chart="week-1"]'))) + (await ev(num('[data-chart="week-2"]'))) + (await ev(num('[data-chart="week-3"]'))) + (await ev(num('[data-chart="week-4"]'))),
     });
 

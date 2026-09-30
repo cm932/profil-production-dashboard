@@ -59,7 +59,7 @@ export function Heatmap({ U, from, to, signature }: { U: Downtime[]; from: strin
   return (
     <div data-chart="heatmap" data-sum={m.sum}>
       <div className="hm-scroll" ref={ref}>
-        <div className="hm" style={{ gridTemplateColumns: `92px repeat(${m.days.length}, minmax(26px, 1fr)) 60px` }}>
+        <div className="hm" style={{ gridTemplateColumns: `92px repeat(${m.days.length}, minmax(26px, 1fr)) 64px`, gridTemplateRows: `auto repeat(${m.machines.length}, minmax(32px, 1fr))` }}>
           <div />
           {m.days.map((d, i) => (
             <div key={d} className={'hm-h' + (isMonday(d) || i === 0 ? ' wk' : '')}>{isMonday(d) || i === 0 ? dm(d) : d.slice(8)}</div>

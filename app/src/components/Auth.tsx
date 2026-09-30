@@ -46,12 +46,14 @@ export function Login() {
   }
 
   return (
-    <AuthCard title="Вход в систему" sub="Введите логин и пароль, выданные администратором.">
+    <AuthCard title="Вход в систему" sub={__SEALED__
+      ? 'Данные в этом файле зашифрованы. Логин и пароль — ключ к ним: каждая роль расшифровывает только свою часть данных.'
+      : 'Введите логин и пароль, выданные администратором.'}>
       <form onSubmit={submit} className="auth-form">
         <Field label="Логин"><input id="loginName" className="input" autoComplete="username" autoFocus value={l} onChange={(e) => setL(e.target.value)} spellCheck={false} /></Field>
         <Field label="Пароль"><input id="loginPass" className="input" type="password" autoComplete="current-password" value={p} onChange={(e) => setP(e.target.value)} /></Field>
         {err && <div className="auth-error" role="alert" id="loginError">{err}</div>}
-        <Button variant="primary" size="lg" type="submit" disabled={busy || !l || !p} id="loginSubmit"><LogIn size={16} strokeWidth={1.5} />{busy ? 'Проверяю…' : 'Войти'}</Button>
+        <Button variant="primary" size="lg" type="submit" disabled={busy || !l || !p} id="loginSubmit"><LogIn size={16} strokeWidth={1.5} />{busy ? (__SEALED__ ? 'Расшифровываю…' : 'Проверяю…') : 'Войти'}</Button>
       </form>
       {serverInfo?.demo && serverInfo.demoUsers.length > 0 && (
         <details className="auth-demo">
@@ -101,6 +103,11 @@ export function MustChange() {
 }
 
 export function ServerDown() {
+  if (__SEALED__) return (
+    <AuthCard title="Файл повреждён" sub="В странице нет зашифрованных данных. Возьмите файл panel/index.html из архива заново.">
+      <Badge tone="danger" dot>нет данных</Badge>
+    </AuthCard>
+  )
   return (
     <AuthCard title="Нет связи с сервером" sub="Панель не смогла обратиться к серверу. Проверьте, что он запущен, и обновите страницу.">
       <Badge tone="danger" dot>сервер недоступен</Badge>

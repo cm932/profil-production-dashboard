@@ -3,6 +3,7 @@ import { ApiError, api, probeServer, type MeResponse, type ServerMeta } from '@/
 import { buildInsights, type Insight } from '@/lib/insights'
 import { addDays, applyFilters, computeSummary, dataBounds, periodMismatch, type Filtered, type Journals, type Summary } from '@/lib/model'
 import { readFile } from '@/lib/parse'
+import { readVault, unseal } from '@/lib/vault'
 import type { Defect, Downtime, Filters, Journal, Kind, LoadResult, Params, Perms, SheetId, User } from '@/lib/types'
 
 export interface Preset { label: string; title?: string; from: string; to: string }
@@ -16,9 +17,9 @@ export interface Report {
 }
 export interface ToastMsg { id: number; tone: 'success' | 'warning' | 'danger' | 'info'; title: string; text?: string }
 
-/** boot — проверяем, есть ли сервер; demo — автономный режим без входа; login — нужен вход; mustchange — нужно сменить временный пароль;
- *  app — работа под учётной записью; error — сервер недоступен */
-export type Mode = 'boot' | 'demo' | 'login' | 'mustchange' | 'app' | 'error'
+/** boot — проверяем, есть ли сервер; demo — режим разработки без входа; sealed — запечатанный файл, данные расшифрованы паролем;
+ *  login — нужен вход; mustchange — нужно сменить временный пароль; app — работа под учётной записью на сервере; error — сервер недоступен */
+export type Mode = 'boot' | 'demo' | 'sealed' | 'login' | 'mustchange' | 'app' | 'error'
 
 interface PendingImport { results: LoadResult[]; failures: string[] }
 
@@ -105,6 +106,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<ToastMsg | null>(null)
   const [pendingImport, setPendingImport] = useState<PendingImport | null>(null)
   const toastId = useRef(0)
+  const sealedRef = useRef<Journals>(EMPTY) // расшифрованные журналы запечатанного файла — для «Вернуть исходные данные»
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const bounds = useMemo(() => dataBounds(journals), [journals])
@@ -126,7 +128,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return out.concat(weeks.slice(-5)) // нумерация остаётся сквозной от начала данных
   }, [bounds])
 
-  const showMoney = mode === 'demo' || perms.money
+  const showMoney = mode === 'demo' || (mode !== 'boot' && perms.money)
   const F = useMemo(() => applyFilters(journals, filters), [journals, filters])
   const summary = useMemo(() => computeSummary(journals, filters, params, F), [journals, filters, params, F])
   const insights = useMemo(() => (bounds ? buildInsights({ F, f: filters, p: params, s: summary, money: showMoney }) : []), [bounds, F, filters, params, summary, showMoney])
@@ -153,7 +155,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const s = new Set((next.downtime?.records ?? []).map((r) => r.shop))
     setJournals(next)
     setFiltersState((cur) => {
-      const shop = cur.shop !== 'all' && !s.has(cur.shop) ? 'all' : cur.shop
+      // один цех (у начальника цеха) — фильтр по цеху не нужен, в подписях сразу его название
+      const shop = s.size === 1 ? [...s][0] : cur.shop !== 'all' && !s.has(cur.shop) ? 'all' : cur.shop
       const next = keepFilters && b && cur.from && cur.to
         ? { ...cur, from: cur.from < b.min ? b.min : cur.from, to: cur.to > b.max ? b.max : cur.to, shop }
         : { ...cur, from: b?.min ?? '', to: b?.max ?? '', shop }
@@ -186,6 +189,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let dead = false
     ;(async () => {
+      if (__SEALED__) { setMode(readVault() ? 'login' : 'error'); return }
       const meta = await probeServer()
       if (dead) return
       if (!meta) {
@@ -217,12 +221,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const login = useCallback(async (loginName: string, password: string) => {
+    if (__SEALED__) {
+      const vault = readVault()
+      if (!vault) throw new Error('В файле нет зашифрованных данных.')
+      const u = await unseal(vault, loginName, password)
+      const j = (records: unknown[], fileName: string) => ({ records, fileName, errors: [], total: records.length, isDefault: true })
+      const next = { downtime: j(u.downtime, u.source.downtime), defects: j(u.defects, u.source.defects) } as Journals
+      sealedRef.current = next
+      setUser(u.user); setPerms(u.perms)
+      if (u.settings) setParamsState({ ...u.settings, ...(() => { try { return JSON.parse(localStorage.getItem('profil.params') || '{}') } catch { return {} } })() })
+      adopt(next)
+      setMode('sealed')
+      setSheetState((cur) => (u.perms.sheets.includes(cur) ? cur : u.perms.sheets[0]))
+      return
+    }
     const me = await api.post<MeResponse>('/api/login', { login: loginName, password })
     await enter(me)
-  }, [enter])
+  }, [enter, adopt])
 
   const logout = useCallback(async () => {
-    try { await api.post('/api/logout') } catch { /* сессия и так закрыта */ }
+    if (!__SEALED__) { try { await api.post('/api/logout') } catch { /* сессия и так закрыта */ } }
+    sealedRef.current = EMPTY // расшифрованные данные в памяти больше не держим
     setUser(null); setPerms(NO_PERMS); setJournals(EMPTY); setReport(null); setPendingImport(null)
     setFiltersState({ from: '', to: '', shift: 'all', shop: 'all' })
     setMode('login')
@@ -306,6 +325,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       notify({ tone: 'info', title: 'Исходные данные возвращены' })
       return
     }
+    if (mode === 'sealed') {
+      adopt(sealedRef.current)
+      setReport(null)
+      notify({ tone: 'info', title: 'Исходные данные возвращены' })
+      return
+    }
     if (__STANDALONE__) {
       const { loadDefaultJournals } = await import('@/data/default')
       adopt(toJournals(loadDefaultJournals(), true, EMPTY))
@@ -332,7 +357,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     notify({ tone: 'success', title: 'Запись удалена' })
   }, [loadServerData, notify])
 
-  const canReset = mode === 'demo' ? !(journals.downtime?.isDefault && journals.defects?.isDefault) : false
+  const canReset = mode === 'demo' || mode === 'sealed' ? !((journals.downtime?.isDefault ?? true) && (journals.defects?.isDefault ?? true)) : false
 
   const value: Store = {
     mode, serverInfo, user, perms, showMoney, journals, filters, params, sheet, report, toast, bounds, presets, shops, F, summary, insights, canReset, pendingImport,

@@ -2,7 +2,7 @@
 // Интерфейс только показывает то, что разрешил сервер: даже подделав запрос, пользователь получит 403 или пустой ответ.
 import { attemptLogin, createSession, destroySession, destroyUserSessions, hashPassword, passwordProblem, sessionUser, tempPassword, verifyPassword, SESSION_ABS_MS } from './auth.js'
 import { audit, getSettings, loadSeed, nowIso, setSettings, tx } from './db.js'
-import { ROLES, canCreate, canModify, publicPerms } from './roles.js'
+import { ROLES, canCreate, canModify, publicPerms, scopeRows } from './roles.js'
 import { DEMO_USERS } from './seed.js'
 import { validateUser, validators } from './validate.js'
 
@@ -27,18 +27,9 @@ const publicUser = (u) => ({ id: u.id, login: u.login, name: u.name, role: u.rol
 
 /** Данные, которые пользователь вправе видеть. Начальник цеха — только свой цех, оператор ОТК — только брак. */
 function scopedData(db, user) {
-  const scope = ROLES[user.role].scope
   const dt = db.prepare('SELECT * FROM downtime ORDER BY date, id').all()
   const df = db.prepare('SELECT * FROM defects ORDER BY date, id').all()
-  if (scope === 'all') return { dt, df }
-  if (scope === 'defects-only') return { dt: [], df }
-  // цех: простои своего цеха; брак — по операциям своего цеха (операция ↔ цех определяется по журналу простоев)
-  const opShops = new Map()
-  for (const r of dt) { if (!opShops.has(r.op)) opShops.set(r.op, new Set()); opShops.get(r.op).add(r.shop) }
-  return {
-    dt: dt.filter((r) => r.shop === user.shop),
-    df: df.filter((r) => { const s = opShops.get(r.op); return !s || s.size === 0 || s.has(user.shop) }),
-  }
+  return scopeRows(user, dt, df)
 }
 
 function parseCookies(header) {

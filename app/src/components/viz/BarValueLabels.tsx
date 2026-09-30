@@ -61,9 +61,11 @@ export function BarValueLabels({ mode, format, groupGap = 4, stackGap = 0 }: {
 /** Засечки оси значений (у Bklit для столбцов и линий отдельной оси значений нет).
  *  Вертикальные графики — слева, горизонтальные — снизу. */
 export function ValueTicks({ count = 4, format }: { count?: number; format: (v: number) => string }) {
-  const { yScale, orientation, innerHeight } = useChart()
-  const ticks: number[] = (yScale as unknown as { ticks?: (n: number) => number[] }).ticks?.(count) ?? []
+  const { yScale, orientation, innerHeight, innerWidth } = useChart()
   const horizontal = orientation === 'horizontal'
+  // на узком графике делений меньше, чтобы подписи не слипались (≈ одно деление на 64 px)
+  const n = horizontal ? Math.max(2, Math.min(count, Math.floor((innerWidth ?? 400) / 64))) : count
+  const ticks: number[] = (yScale as unknown as { ticks?: (n: number) => number[] }).ticks?.(n) ?? []
   return (
     <g pointerEvents="none" data-value-ticks="">
       {ticks.map((t) => {

@@ -52,12 +52,17 @@ export function DataSheet() {
   useLayoutEffect(() => {
     const el = wrapRef.current
     if (!el) return
-    const calc = () => setPageSize(Math.max(5, Math.floor((el.clientHeight - 44) / ROW_H)))
+    // высоту строки и шапки меряем по-настоящему: от шрифта и отступов зависит, сколько строк влезает
+    const calc = () => {
+      const head = el.querySelector("thead")?.getBoundingClientRect().height || 36
+      const row = el.querySelector("tbody tr")?.getBoundingClientRect().height || ROW_H
+      setPageSize(Math.max(5, Math.floor((el.clientHeight - head - 2) / row)))
+    }
     calc()
     const ro = new ResizeObserver(calc)
     ro.observe(el)
     return () => ro.disconnect()
-  }, [])
+  }, [kind])
 
   const rows = useMemo(() => {
     let r = (kind === 'downtime' ? F.D : F.B) as (Downtime | Defect)[]

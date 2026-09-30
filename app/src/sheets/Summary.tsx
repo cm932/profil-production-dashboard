@@ -1,7 +1,7 @@
 import { motion } from 'motion/react'
 import { Settings2 } from 'lucide-react'
 import { CountUp } from '@/components/CountUp'
-import { InsightPanel } from '@/components/InsightPanel'
+import { InsightGrid } from '@/components/InsightPanel'
 import { Field, FitCard, Popover } from '@/components/ui'
 import { OpsByShiftChart, ParetoChart } from '@/components/viz/charts'
 import { hours, nf, plural, rub } from '@/lib/format'
@@ -10,11 +10,11 @@ import { daysBetween, shownShifts } from '@/lib/model'
 import { useStore } from '@/store'
 import { SheetFrame } from './SheetFrame'
 
-function Kpi({ i, label, value, format, unit, sub, progress }: {
-  i: number; label: string; value: number; format: (n: number) => string; unit?: string; sub: string; progress?: number
+function Kpi({ i, label, value, format, unit, sub, progress, title }: {
+  i: number; label: string; value: number; format: (n: number) => string; unit?: string; sub: string; progress?: number; title?: string
 }) {
   return (
-    <motion.div {...reveal(i)} className="tile">
+    <motion.div {...reveal(i)} className="tile" title={title}>
       <span className="k">{label}</span>
       <span className="v">
         <CountUp value={value} format={format} />
@@ -57,24 +57,24 @@ export function Summary() {
     <SheetFrame id="summary" actions={showMoney ? assumptions : undefined}
       captionExtra={showMoney ? 'ставки: ' + nf(params.hourCost) + ' ₽/ч простоя, ' + nf(params.pieceCost) + ' ₽/деталь, смена ' + nf(params.shiftHours, 1) + ' ч' : undefined}>
       <div className="kpis" id="kpis" data-cols={showMoney ? 4 : 3} data-loss-min={s.lossMin} data-planned-min={s.plannedMin} data-pieces={s.pieces} data-cases={s.defectCases} data-orders={s.orders}>
-        <Kpi i={0} label="Потери времени (внеплановые простои)" value={s.lossMin / 60} format={(n) => nf(n, 1)} unit="ч"
-          sub={'≈ ' + nf(s.lossMin / 60 / shiftH, 1) + ' смен станка · плановое ТО ещё ' + hours(s.plannedMin) + ' ч'} />
-        <Kpi i={1} label="Доступность оборудования" value={s.fundMin ? s.availability * 100 : 0} format={(n) => (s.fundMin ? nf(n, 1) : '—')} unit="%" progress={s.fundMin ? s.availability : 0}
-          sub={'фонд ' + nf(s.fundMin / 60) + ' станко-ч: ' + s.machines + ' ст. × ' + s.days + ' дн. × ' + s.shifts + ' см. × ' + nf(shiftH, 1) + ' ч'} />
+        <Kpi i={0} label="Потери времени" value={s.lossMin / 60} format={(n) => nf(n, 1)} unit="ч"
+          sub={'внеплановые простои ≈ ' + nf(s.lossMin / 60 / shiftH, 1) + ' смен'} title={'Плановое ТО (' + hours(s.plannedMin) + ' ч) в потери не входит'} />
+        <Kpi i={1} label="Доступность станков" value={s.fundMin ? s.availability * 100 : 0} format={(n) => (s.fundMin ? nf(n, 1) : '—')} unit="%" progress={s.fundMin ? s.availability : 0}
+          sub={'от фонда ' + nf(s.fundMin / 60) + ' станко-ч'} title={'Фонд: ' + s.machines + ' станков × ' + s.days + ' дн. × ' + s.shifts + ' смены × ' + nf(shiftH, 1) + ' ч'} />
         <Kpi i={2} label="Брак" value={s.pieces} format={(n) => nf(n)} unit="шт"
           sub={s.defectCases + ' ' + plural(s.defectCases, 'случай', 'случая', 'случаев') + ' в ' + s.orders + ' ' + plural(s.orders, 'заказе', 'заказах', 'заказах')} />
         {/* деньги видят только роли, которым они положены (сервер ставки остальным не отдаёт) */}
-        {showMoney && <Kpi i={3} label="Потери в деньгах (оценка)" value={s.lossRub + s.defectRub} format={(n) => rub(n)}
+        {showMoney && <Kpi i={3} label="Потери в деньгах, оценка" value={s.lossRub + s.defectRub} format={(n) => rub(n)}
           sub={'простои ' + rub(s.lossRub) + ' + брак ' + rub(s.defectRub)} />}
       </div>
 
       <div className="fit-row summary-main">
-        <InsightPanel insights={insights} note={note} />
+        <InsightGrid insights={insights} note={note} />
         <div className="fit-col">
-          <FitCard i={2} title="Где теряем время" sub="внеплановые простои по причинам">
+          <FitCard i={2} title="Где теряем время" sub="простои по причинам, часы">
             {U.length ? <ParetoChart U={U} /> : <div className="empty">Нет простоев за выбранный период</div>}
           </FitCard>
-          <FitCard i={3} title="Где возникает брак" sub="операции и смены, шт">
+          <FitCard i={3} title="Где возникает брак" sub="по операциям и сменам, шт">
             {F.B.length ? <OpsByShiftChart B={F.B} shifts={shownShifts(filters)} /> : <div className="empty">Нет брака за выбранный период</div>}
           </FitCard>
         </div>
