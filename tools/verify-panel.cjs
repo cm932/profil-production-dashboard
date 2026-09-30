@@ -3,8 +3,8 @@
 // сравниваются ожидаемые значения с тем, что показывает панель: KPI, суммы всех графиков, тепловая карта, лист «Данные».
 // Панель отдаёт проверяемые числа в атрибутах data-* (data-sum на каждом графике, data-loss-min на KPI и т. д.).
 // Запуск (нужен Microsoft Edge, Windows):
-//   node tools/verify-panel.js [путь к index.html]   — автономная панель (данные вшиты)
-//   node tools/verify-panel.js --server              — серверная панель: сервер поднимается сам, вход директором, данные берутся из базы SQLite
+//   node tools/verify-panel.cjs [путь к index.html]   — автономная панель (данные вшиты)
+//   node tools/verify-panel.cjs --server              — серверная панель: сервер поднимается сам, вход директором, данные берутся из базы SQLite
 const fs = require('fs');
 const os = require('os');
 const path = require('path');

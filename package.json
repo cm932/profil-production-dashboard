@@ -9,6 +9,6 @@
     "start": "node --no-warnings server/index.js",
     "build": "npm --prefix app install && npm --prefix app run build",
     "test": "node --no-warnings tools/test-server.js && node --no-warnings tools/e2e.js",
-    "verify": "node --no-warnings tools/verify-panel.js && node --no-warnings tools/verify-panel.js --server"
+    "verify": "node --no-warnings tools/verify-panel.cjs && node --no-warnings tools/verify-panel.cjs --server"
   }
 }
