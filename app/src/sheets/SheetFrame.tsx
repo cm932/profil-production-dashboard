@@ -8,15 +8,15 @@ import { exportSheetPDF, renderSheetPages, withExportMode } from '@/lib/pdf'
 import type { SheetId } from '@/lib/types'
 import { useStore } from '@/store'
 
-const TITLE: Record<SheetId, string> = { summary: 'Сводка', downtime: 'Простои', defects: 'Брак', data: 'Данные' }
+const TITLE: Record<SheetId, string> = { summary: 'Сводка', downtime: 'Простои', defects: 'Брак', data: 'Данные', admin: 'Администрирование' }
 
 /** Общий каркас листа: компактная шапка (название, фильтры, действия) и кнопка «Скачать PDF», сохраняющая именно этот лист.
  *  Содержимое листа занимает всю оставшуюся высоту окна — прокрутки страницы нет. */
-export function SheetFrame({ id, children, actions, captionExtra }: { id: SheetId; children: ReactNode; actions?: ReactNode; captionExtra?: string }) {
-  const { filters, notify } = useStore()
+export function SheetFrame({ id, children, actions, captionExtra, caption: captionOverride }: { id: SheetId; children: ReactNode; actions?: ReactNode; captionExtra?: string; caption?: string }) {
+  const { filters, notify, perms } = useStore()
   const ref = useRef<HTMLElement>(null)
   const [busy, setBusy] = useState(false)
-  const caption = filterCaption(filters) + (captionExtra ? ' · ' + captionExtra : '')
+  const caption = captionOverride ?? filterCaption(filters) + (captionExtra ? ' · ' + captionExtra : '')
 
   // Служебный вход для автоматической проверки PDF: возвращает страницы листа картинками (в интерфейсе не используется)
   useEffect(() => {
@@ -52,7 +52,7 @@ export function SheetFrame({ id, children, actions, captionExtra }: { id: SheetI
         </div>
         <div className="sheet-actions no-print">
           {actions}
-          <Button className="pdf-btn" onClick={pdf} disabled={busy}><FileDown size={16} strokeWidth={1.5} />{busy ? 'Готовлю PDF…' : 'Скачать PDF'}</Button>
+          {perms.pdf && id !== 'admin' && <Button className="pdf-btn" onClick={pdf} disabled={busy}><FileDown size={16} strokeWidth={1.5} />{busy ? 'Готовлю PDF…' : 'Скачать PDF'}</Button>}
         </div>
       </div>
       {children}

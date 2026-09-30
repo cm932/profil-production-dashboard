@@ -2,7 +2,9 @@
 // Исходные журналы разбираются здесь своим кодом (не кодом панели), затем для каждой комбинации фильтров
 // сравниваются ожидаемые значения с тем, что показывает панель: KPI, суммы всех графиков, тепловая карта, лист «Данные».
 // Панель отдаёт проверяемые числа в атрибутах data-* (data-sum на каждом графике, data-loss-min на KPI и т. д.).
-// Запуск (нужен Microsoft Edge, Windows): node tools/verify-panel.js [путь к index.html]
+// Запуск (нужен Microsoft Edge, Windows):
+//   node tools/verify-panel.js [путь к index.html]   — автономная панель (данные вшиты)
+//   node tools/verify-panel.js --server              — серверная панель: сервер поднимается сам, вход директором, данные берутся из базы SQLite
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -10,8 +12,11 @@ const { spawn, execSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
 const EDGE = ['C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', 'C:/Program Files/Microsoft/Edge/Application/msedge.exe'].find((p) => fs.existsSync(p));
-const PANEL = process.argv[2] ? path.resolve(process.argv[2]) : path.join(ROOT, 'panel', 'index.html');
-const PANEL_URL = 'file:///' + PANEL.replace(/\\/g, '/');
+const SERVER_MODE = process.argv.includes("--server");
+const fileArg = process.argv.slice(2).find((a) => !a.startsWith("--"));
+const PANEL = fileArg ? path.resolve(fileArg) : path.join(ROOT, 'panel', 'index.html');
+let srv = null;
+let PANEL_URL = 'file:///' + PANEL.replace(/\\/g, '/');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---------- 1. Независимое чтение исходных файлов ----------
@@ -66,6 +71,11 @@ for (const p of periods) for (const shift of ['all', '1', '2']) for (const shop 
 
 // ---------- 3. Управление браузером ----------
 (async () => {
+  if (SERVER_MODE) {
+    const { startServer } = await import('../server/index.js');
+    srv = await startServer({ port: 0, dbFile: ':memory:', demo: true, log: () => {} });
+    PANEL_URL = srv.url;
+  }
   const prof = path.join(tmp, 'edge-profile');
   const proc = spawn(EDGE, ['--headless=new', '--disable-gpu', '--remote-debugging-port=9444', '--user-data-dir=' + prof, '--window-size=1500,1100', 'about:blank'], { stdio: 'ignore' });
   let list;
@@ -88,11 +98,21 @@ for (const p of periods) for (const shift of ['all', '1', '2']) for (const shop 
     if (r.result.exceptionDetails) throw new Error(JSON.stringify(r.result.exceptionDetails));
     return r.result.result.value;
   };
+  const waitLogin = async () => {
+    for (let i = 0; i < 100 && !(await ev("!!document.querySelector('#loginName')")); i++) await sleep(100);
+    await ev(`(() => { const set = (sel, v) => { const el = document.querySelector(sel); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, v); el.dispatchEvent(new Event('input', { bubbles: true })); }; set('#loginName', 'director'); set('#loginPass', 'Director-2026!'); })()`);
+    await sleep(150);
+    await ev("document.querySelector('#loginSubmit').click()");
+    for (let i = 0; i < 100 && !(await ev("!!document.querySelector('#kpis')")); i++) await sleep(100);
+  };
   await send('Runtime.enable');
   await send('Page.enable');
   await send('Emulation.setDeviceMetricsOverride', { width: 1500, height: 1100, deviceScaleFactor: 1, mobile: false });
   await send('Page.navigate', { url: PANEL_URL });
   await sleep(2500);
+  if (SERVER_MODE) {
+    await waitLogin();
+  }
 
   // Ждём, пока условие станет истинным (лист выехал, график отрисовался)
   const waitFor = async (cond, ms = 6000) => {
@@ -175,5 +195,6 @@ for (const p of periods) for (const shift of ['all', '1', '2']) for (const shop 
   if (errors.length) console.log(errors.slice(0, 5).join('\n'));
   ws.close();
   proc.kill();
+  if (srv) await srv.close();
   process.exit(bad || errors.length ? 1 : 0);
 })();

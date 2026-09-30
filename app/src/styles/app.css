@@ -373,3 +373,67 @@
 .tabs .tab, .chip { white-space: nowrap; }
 .exporting .table-card { flex: none; height: auto; overflow: visible; }
 .exporting .table-card .table-wrap { flex: none; height: auto; overflow: visible; }
+
+/* =====================================================================
+   Вход, учётные записи, администрирование, диалоги
+   ===================================================================== */
+.boot { min-height: 100dvh; display: grid; place-items: center; }
+.auth { min-height: 100dvh; display: grid; place-items: center; padding: var(--s-6); background: var(--bg-canvas); }
+.auth-card { width: min(440px, 100%); display: flex; flex-direction: column; gap: var(--s-4); padding: var(--s-8); }
+.auth-brand { padding: 0; margin-bottom: var(--s-2); }
+.auth-sub { color: var(--text-secondary); line-height: 1.5; }
+.auth-form { display: flex; flex-direction: column; gap: var(--s-4); }
+.auth-error { padding: var(--s-3) var(--s-4); border-radius: var(--r-md); background: var(--danger-soft); color: var(--danger); font-size: var(--text-sm); line-height: 1.4; border: 1px solid color-mix(in oklab, var(--danger) 35%, transparent); }
+.auth-demo { margin-top: var(--s-2); padding-top: var(--s-4); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); }
+.auth-demo summary { cursor: pointer; color: var(--text-secondary); font-weight: 500; }
+.auth-demo ul { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: grid; gap: var(--s-2); }
+.auth-demo li { display: flex; align-items: center; gap: var(--s-3); color: var(--text-secondary); }
+
+/* --- боковое меню: карточка пользователя --- */
+.sidebar-foot { margin-top: auto; }
+.sidebar-user { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3); border: 1px solid var(--border-subtle); border-radius: var(--r-lg); background: var(--bg-inset); }
+.user-name { font-weight: 600; font-size: var(--text-base); line-height: 1.25; }
+.user-meta { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; font-size: var(--text-xs); color: var(--text-secondary); }
+.user-warn { color: var(--warning); }
+.user-actions { display: flex; gap: var(--s-1); margin-inline: calc(var(--s-2) * -1); }
+
+/* --- диалоги --- */
+.dialog-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: var(--s-6); background: rgba(6, 7, 6, .62); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.dialog { max-width: 100%; max-height: calc(100dvh - 48px); display: flex; flex-direction: column; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--r-xl); box-shadow: var(--shadow-3); overflow: hidden; }
+.dialog-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); padding: var(--s-4) var(--s-5); border-bottom: 1px solid var(--border-subtle); }
+.dialog-title { font-family: var(--font-display); font-size: var(--text-md); font-weight: 600; letter-spacing: -.02em; }
+.dialog-body { padding: var(--s-5); overflow: auto; display: flex; flex-direction: column; gap: var(--s-3); line-height: 1.5; color: var(--text-secondary); }
+.dialog-body b { color: var(--text-primary); }
+.dialog-foot { padding: var(--s-3) var(--s-5) var(--s-4); border-top: 1px solid var(--border-subtle); }
+.dialog-actions { display: flex; justify-content: flex-end; gap: var(--s-2); flex-wrap: wrap; }
+.rec-form { display: flex; flex-direction: column; gap: var(--s-4); }
+.rec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3) var(--s-4); }
+.temp-pass { font-family: var(--font-mono); font-size: var(--text-xl); letter-spacing: .06em; padding: var(--s-4); text-align: center; border-radius: var(--r-md); background: var(--bg-inset); border: 1px dashed var(--border-strong); color: var(--text-primary); user-select: all; }
+
+/* --- таблицы с действиями, админ-панель --- */
+.row-actions { white-space: nowrap; text-align: right; }
+.row-actions .btn { --btn-h: 28px; }
+.admin-card .table-wrap { flex: 1 1 0; min-height: 0; max-height: none; overflow: auto; }
+.role-legend { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-4); padding-top: var(--s-3); margin-top: var(--s-3); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); }
+.role-legend div { display: flex; flex-direction: column; gap: 2px; }
+.role-legend span { color: var(--text-secondary); line-height: 1.4; }
+.audit-detail { max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.service-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4); align-content: start; }
+.service-text { color: var(--text-secondary); line-height: 1.5; margin-bottom: var(--s-4); }
+.sheet--admin .table-tools .hint { font-size: var(--text-sm); color: var(--text-secondary); }
+
+@media (min-width: 1280px) and (min-height: 700px) {
+  .sheet--admin { grid-template-rows: auto auto minmax(0, 1fr); }
+}
+@media (max-width: 900px) {
+  .rec-grid, .service-grid { grid-template-columns: 1fr; }
+  .role-legend { grid-template-columns: 1fr 1fr; }
+}
+
+/* без плитки «деньги» показателей три — делим ширину на три (только на больших экранах, узкие раскладки не трогаем) */
+@media (min-width: 1280px) { .kpis[data-cols="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+.topbar-actions { margin-left: auto; }
+.admin-body { display: flex; flex-direction: column; gap: var(--s-4); min-height: 0; }
+.admin-body > .fit-card, .admin-body > .card { flex: 1 1 0; min-height: 0; }
+.admin-body > .service-grid { flex: 1 1 0; min-height: 0; }

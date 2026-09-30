@@ -35,7 +35,7 @@ function Kpi({ i, label, value, format, unit, sub, progress }: {
 }
 
 export function Summary() {
-  const { summary: s, F, filters, params, setParams, insights } = useStore()
+  const { summary: s, F, filters, params, setParams, insights, showMoney } = useStore()
   const shiftH = params.shiftHours
   const note = filters.from && daysBetween(filters.from, filters.to) >= 14
     ? 'Недели считаются от конца выбранного периода (по 7 дней); неполная неделя в начале в сравнении не участвует.' : ''
@@ -54,17 +54,18 @@ export function Summary() {
   )
 
   return (
-    <SheetFrame id="summary" actions={assumptions}
-      captionExtra={'ставки: ' + nf(params.hourCost) + ' ₽/ч простоя, ' + nf(params.pieceCost) + ' ₽/деталь, смена ' + nf(params.shiftHours, 1) + ' ч'}>
-      <div className="kpis" id="kpis" data-loss-min={s.lossMin} data-planned-min={s.plannedMin} data-pieces={s.pieces} data-cases={s.defectCases} data-orders={s.orders}>
+    <SheetFrame id="summary" actions={showMoney ? assumptions : undefined}
+      captionExtra={showMoney ? 'ставки: ' + nf(params.hourCost) + ' ₽/ч простоя, ' + nf(params.pieceCost) + ' ₽/деталь, смена ' + nf(params.shiftHours, 1) + ' ч' : undefined}>
+      <div className="kpis" id="kpis" data-cols={showMoney ? 4 : 3} data-loss-min={s.lossMin} data-planned-min={s.plannedMin} data-pieces={s.pieces} data-cases={s.defectCases} data-orders={s.orders}>
         <Kpi i={0} label="Потери времени (внеплановые простои)" value={s.lossMin / 60} format={(n) => nf(n, 1)} unit="ч"
           sub={'≈ ' + nf(s.lossMin / 60 / shiftH, 1) + ' смен станка · плановое ТО ещё ' + hours(s.plannedMin) + ' ч'} />
         <Kpi i={1} label="Доступность оборудования" value={s.fundMin ? s.availability * 100 : 0} format={(n) => (s.fundMin ? nf(n, 1) : '—')} unit="%" progress={s.fundMin ? s.availability : 0}
           sub={'фонд ' + nf(s.fundMin / 60) + ' станко-ч: ' + s.machines + ' ст. × ' + s.days + ' дн. × ' + s.shifts + ' см. × ' + nf(shiftH, 1) + ' ч'} />
         <Kpi i={2} label="Брак" value={s.pieces} format={(n) => nf(n)} unit="шт"
           sub={s.defectCases + ' ' + plural(s.defectCases, 'случай', 'случая', 'случаев') + ' в ' + s.orders + ' ' + plural(s.orders, 'заказе', 'заказах', 'заказах')} />
-        <Kpi i={3} label="Потери в деньгах (оценка)" value={s.lossRub + s.defectRub} format={(n) => rub(n)}
-          sub={'простои ' + rub(s.lossRub) + ' + брак ' + rub(s.defectRub)} />
+        {/* деньги видят только роли, которым они положены (сервер ставки остальным не отдаёт) */}
+        {showMoney && <Kpi i={3} label="Потери в деньгах (оценка)" value={s.lossRub + s.defectRub} format={(n) => rub(n)}
+          sub={'простои ' + rub(s.lossRub) + ' + брак ' + rub(s.defectRub)} />}
       </div>
 
       <div className="fit-row summary-main">

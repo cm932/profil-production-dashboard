@@ -7,3 +7,5 @@ app/dist/
 skills-lock.json
 # дизайн-система VOLT лежит в папке проекта как исходный материал; в панель она вошла как app/src/styles/volt
 Дизайн система/
+node_modules/
+server/data/

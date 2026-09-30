@@ -1,9 +1,12 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Dialog } from '@/components/Dialog'
+import { RecordDialog } from '@/components/RecordDialog'
 import { Button, Segmented } from '@/components/ui'
 import { useExporting } from '@/hooks/useExporting'
 import { hours, nf, ruDate, SHIFT_NAME } from '@/lib/format'
 import { sum } from '@/lib/model'
+import { canModifyRecord } from '@/lib/roles'
 import type { Defect, Downtime } from '@/lib/types'
 import { useStore } from '@/store'
 import { SheetFrame } from './SheetFrame'
@@ -28,9 +31,16 @@ const COLS: Record<Kind, Col[]> = {
 const ROW_H = 46 // высота строки таблицы (VOLT: 44 + линия)
 
 export function DataSheet() {
-  const { F, journals } = useStore()
+  const { F, filters, journals, user, perms, mode, deleteRecord } = useStore()
   const exporting = useExporting()
-  const [kind, setKind] = useState<Kind>('downtime')
+  // оператору ОТК простои недоступны — журнал простоев ему не показываем
+  const kinds: Kind[] = user?.role === 'otk' ? ['defects'] : ['downtime', 'defects']
+  const [kind, setKind] = useState<Kind>(kinds[0])
+  const [editing, setEditing] = useState<{ rec: Downtime | Defect | null } | null>(null)
+  const [deleting, setDeleting] = useState<Downtime | Defect | null>(null)
+  const [delErr, setDelErr] = useState('')
+  const canAdd = mode === 'app' && !!perms.records[kind]
+  const showActions = mode === 'app' && !!perms.records[kind]
   const [q, setQ] = useState('')
   const [sort, setSort] = useState<{ key: string | null; dir: 1 | -1 }>({ key: null, dir: 1 })
   const [page, setPage] = useState(0)
@@ -64,7 +74,7 @@ export function DataSheet() {
   }, [F, kind, q, sort, cols])
 
   const pages = Math.max(1, Math.ceil(rows.length / pageSize))
-  useEffect(() => { setPage(0) }, [F, kind, q, sort])
+  useEffect(() => { setPage(0) }, [filters, kind, q, sort]) // не при обновлении данных: после правки записи человек остаётся на своей странице
   const cur = Math.min(page, pages - 1)
   // В PDF нужны все строки (на экране — одна страница)
   const shown = exporting ? rows : rows.slice(cur * pageSize, cur * pageSize + pageSize)
@@ -80,8 +90,9 @@ export function DataSheet() {
       <div className="table-tools">
         <div className="tools-left no-print">
         <Segmented label="Журнал" value={kind} onChange={(v) => { setKind(v); setSort({ key: null, dir: 1 }) }}
-          items={[{ id: 'downtime', label: 'Журнал простоев' }, { id: 'defects', label: 'Журнал брака' }]} />
+          items={kinds.map((k) => ({ id: k, label: k === 'downtime' ? 'Журнал простоев' : 'Журнал брака' }))} />
         <input id="dSearch" className="input" type="search" placeholder="Поиск по любому полю…" aria-label="Поиск" value={q} onChange={(e) => setQ(e.target.value)} />
+        {canAdd && <Button id="addRecord" onClick={() => setEditing({ rec: null })}><Plus size={16} strokeWidth={1.5} />Добавить запись</Button>}
         </div>
         <div className="table-totals" id="dTotals" data-kind={kind} data-rows={rows.length}
           data-total-min={kind === 'downtime' ? totMin : undefined} data-loss-min={kind === 'downtime' ? totLoss : undefined} data-pieces={kind === 'defects' ? totPcs : undefined}>
@@ -103,6 +114,7 @@ export function DataSheet() {
                     {c.title}{sort.key === c.key && <span className="arr">{sort.dir > 0 ? '▲' : '▼'}</span>}
                   </th>
                 ))}
+                {showActions && <th className="no-print" style={{ cursor: 'default' }}>Действия</th>}
               </tr>
             </thead>
             <tbody>
@@ -112,6 +124,16 @@ export function DataSheet() {
                     const v = (r as unknown as Record<string, unknown>)[c.key]
                     return <td key={c.key} className={[c.num ? 'r' : '', c.mono ? 'mono' : '', c.dim ? 'dim' : ''].join(' ').trim() || undefined}>{c.fmt ? (c.fmt as (x: unknown) => string)(v) : String(v)}</td>
                   })}
+                  {showActions && (
+                    <td className="no-print row-actions">
+                      {canModifyRecord(user, perms, kind, r) && (
+                        <>
+                          <Button size="sm" variant="ghost" aria-label="Изменить запись" onClick={() => setEditing({ rec: r })}><Pencil size={15} strokeWidth={1.5} /></Button>
+                          <Button size="sm" variant="ghost" aria-label="Удалить запись" onClick={() => { setDelErr(''); setDeleting(r) }}><Trash2 size={15} strokeWidth={1.5} /></Button>
+                        </>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -129,6 +151,13 @@ export function DataSheet() {
           <Button size="sm" variant="ghost" aria-label="Последняя страница" disabled={cur >= pages - 1} onClick={() => setPage(pages - 1)}><ChevronsRight size={16} strokeWidth={1.5} /></Button>
         </div>
       </nav>
+      {editing && <RecordDialog key={editing.rec?.dbId ?? 'new'} open kind={kind} record={editing.rec} onClose={() => setEditing(null)} />}
+      <Dialog open={!!deleting} onClose={() => setDeleting(null)} title="Удалить запись?" width={440}
+        footer={<div className="dialog-actions"><Button variant="ghost" onClick={() => setDeleting(null)}>Отмена</Button>
+          <Button variant="danger" id="confirmDelete" onClick={async () => { try { await deleteRecord(kind, deleting!.dbId!); setDeleting(null) } catch (e) { setDelErr((e as Error).message) } }}>Удалить</Button></div>}>
+        <p>Запись {deleting ? 'от ' + ruDate(deleting.date) : ''} будет удалена из журнала. Действие попадёт в журнал действий.</p>
+        {delErr && <div className="auth-error" role="alert">{delErr}</div>}
+      </Dialog>
     </SheetFrame>
   )
 }

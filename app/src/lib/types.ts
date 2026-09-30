@@ -11,6 +11,9 @@ export interface Downtime {
   reason: string
   planned: boolean
   min: number
+  /** только в серверном режиме: номер записи в базе и кто её создал (для правки своих записей) */
+  dbId?: number
+  createdBy?: number | null
 }
 
 export interface Defect {
@@ -21,6 +24,8 @@ export interface Defect {
   qty: number
   order: string
   shift: Shift
+  dbId?: number
+  createdBy?: number | null
 }
 
 export interface Journal<T> {
@@ -49,4 +54,30 @@ export interface Params {
   pieceCost: number
 }
 
-export type SheetId = 'summary' | 'downtime' | 'defects' | 'data'
+export type SheetId = 'summary' | 'downtime' | 'defects' | 'data' | 'admin'
+
+export type Role = 'admin' | 'director' | 'chief' | 'otk'
+export type Kind = 'downtime' | 'defects'
+
+export interface User {
+  id: number
+  login: string
+  name: string
+  role: Role
+  shop: string | null
+  mustChange: boolean
+  demo: boolean
+}
+
+/** Права, которые сервер сообщил интерфейсу. Интерфейс по ним прячет лишнее; настоящую проверку делает сервер. */
+export interface Perms {
+  label: string
+  sheets: SheetId[]
+  money: boolean
+  upload: boolean
+  pdf: boolean
+  users: boolean
+  audit: boolean
+  settings: boolean
+  records: Partial<Record<Kind, 'all' | 'own'>>
+}

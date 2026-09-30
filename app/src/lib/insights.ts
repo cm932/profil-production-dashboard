@@ -47,6 +47,8 @@ export interface InsightCtx {
   f: Filters
   p: Params
   s: Summary
+  /** показывать ли деньги: роли без права на финансы их не видят */
+  money: boolean
 }
 
 // ---------- 1: станок, у которого потери резко выросли на последней неделе ----------
@@ -130,7 +132,7 @@ function machineSpike({ F, f }: InsightCtx): Insight | null {
 }
 
 // ---------- 2: операция и смена, где брак резко вырос ----------
-function defectSpike({ F, f, p }: InsightCtx): Insight | null {
+function defectSpike({ F, f, p, money }: InsightCtx): Insight | null {
   const { from, to } = f
   if (!from) return null
   const wins = windows(from, to)
@@ -182,7 +184,7 @@ function defectSpike({ F, f, p }: InsightCtx): Insight | null {
     )
   }
   const extra = best.rec - best.prev
-  body.push(' Лишний брак ≈ ' + nf(extra) + ' шт (≈ ' + nf((extra * p.pieceCost) / 1000) + ' тыс. ₽).')
+  body.push(' Лишний брак ≈ ' + nf(extra) + ' шт' + (money ? ' (≈ ' + nf((extra * p.pieceCost) / 1000) + ' тыс. ₽)' : '') + '.')
 
   return {
     level: 'crit',
@@ -232,7 +234,7 @@ function shiftGap({ F }: InsightCtx): Insight | null {
 }
 
 // ---------- 4: общая картина потерь ----------
-function overview({ F, p, s }: InsightCtx): Insight | null {
+function overview({ F, p, s, money }: InsightCtx): Insight | null {
   const U = F.D.filter((r) => !r.planned)
   if (!U.length) return null
   const loss = sum(U, (r) => r.min)
@@ -248,7 +250,7 @@ function overview({ F, p, s }: InsightCtx): Insight | null {
 
   const body: Seg[] = [
     'Потеряно ', b(hours(loss) + ' ч'),
-    (s.fundMin ? ' (' + nf((loss / s.fundMin) * 100, 1) + '% фонда времени)' : '') + ', ≈ ' + nf(((loss / 60) * p.hourCost) / 1000) + ' тыс. ₽ по ставке ' + nf(p.hourCost) + ' ₽/ч. Больше всего теряют ',
+    (s.fundMin ? ' (' + nf((loss / s.fundMin) * 100, 1) + '% фонда времени)' : '') + (money ? ', ≈ ' + nf(((loss / 60) * p.hourCost) / 1000) + ' тыс. ₽ по ставке ' + nf(p.hourCost) + ' ₽/ч' : '') + '. Больше всего теряют ',
     b(machines[0][0]), ' (' + hours(machines[0][1]) + ' ч)',
     ...(machines[1] ? [' и ', b(machines[1][0]), ' (' + hours(machines[1][1]) + ' ч)'] : []),
     '. Крупнейшая причина — «' + reasons[0][0] + '» (' + nf(topShare) + '%).' +
