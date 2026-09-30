@@ -17,7 +17,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 const srv = await startServer({ port: 0, dbFile: ':memory:', demo: true, log: () => {} })
 const prof = path.join(os.tmpdir(), 'profil-e2e-' + Date.now())
-const proc = spawn(EDGE, ['--headless=new', '--disable-gpu', '--remote-debugging-port=9555', '--user-data-dir=' + prof, '--window-size=1920,960', 'about:blank'], { stdio: 'ignore' })
+const proc = spawn(EDGE, ['--headless=new', '--disable-gpu', '--remote-debugging-port=9555', '--user-data-dir=' + prof, '--window-size=1536,730', 'about:blank'], { stdio: 'ignore' })
 let list
 for (let i = 0; i < 60; i++) { try { list = await (await fetch('http://127.0.0.1:9555/json/list')).json(); if (list.length) break } catch { /* ждём */ } await sleep(200) }
 const ws = new WebSocket(list.find((t) => t.type === 'page').webSocketDebuggerUrl)
@@ -36,7 +36,7 @@ const ev = async (expr) => {
   return r.result.result.value
 }
 await send('Runtime.enable'); await send('Page.enable')
-await send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 960, deviceScaleFactor: 1, mobile: false })
+await send('Emulation.setDeviceMetricsOverride', { width: 1536, height: 730, deviceScaleFactor: 1, mobile: false })
 
 const waitFor = async (cond, ms = 8000) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { try { if (await ev(cond)) return true } catch { /* страница перезагружается */ } await sleep(80) } return false }
 const q = (s) => JSON.stringify(s)
@@ -52,9 +52,11 @@ const shot = async (name) => { if (!SHOTS) return; fs.mkdirSync(SHOTS, { recursi
 const results = []
 const check = (name, ok, detail = '') => results.push({ name, ok: !!ok, detail })
 const goHome = async () => { await send('Page.navigate', { url: srv.url }); await waitFor("!!document.querySelector('#loginName') || !!document.querySelector('.app')") }
-async function login(user, pass) {
+async function login(user, pass, { tour = false } = {}) {
   await goHome()
   if (await ev("!!document.querySelector('.app')")) { await clickSel('#logoutBtn'); await waitFor("!!document.querySelector('#loginName')") }
+  // приветственный тур закрывает экран; в проверках он выключен, кроме проверки самого тура
+  await ev(tour === 'fresh' ? "Object.keys(localStorage).filter(k => k.startsWith('profil.tour')).forEach(k => localStorage.removeItem(k))" : tour === 'keep' ? "localStorage.removeItem('profil.tour.off')" : "localStorage.setItem('profil.tour.off', '1')")
   await setVal('#loginName', user); await setVal('#loginPass', pass); await clickSel('#loginSubmit')
 }
 async function logout() { await clickSel('#logoutBtn'); return waitFor("!!document.querySelector('#loginName')") }
@@ -78,7 +80,24 @@ await waitFor("/мин/.test(document.querySelector('#loginError')?.textContent 
 check('после пяти неудач вход блокируется с сообщением о времени ожидания', /Повторите через \d+ мин/.test(await ev("document.querySelector('#loginError')?.textContent || ''")))
 srv.db.prepare("UPDATE users SET locked_until = 0, failed = 0 WHERE login = 'chief2'").run()
 
-// ================= 3. директор
+// ================= 3. приветственный тур и окно смены пароля
+await login('director', 'Director-2026!', { tour: 'fresh' }); await waitFor("!!document.querySelector('#kpis')")
+check('тур: при первом входе открывается сам', await waitFor("!!document.querySelector('.tour-card')", 4000))
+let tourSteps = 0
+for (let k = 0; k < 30 && (await ev("!!document.querySelector('.tour-card')")); k++) { tourSteps++; await sleep(450); await clickSel('#tourNext'); await sleep(250) }
+check('тур: все шаги проходятся кнопкой «Далее», в конце закрывается', tourSteps >= 10 && (await waitFor("!document.querySelector('.tour')", 3000)), 'шагов: ' + tourSteps)
+await logout(); await login('director', 'Director-2026!', { tour: 'keep' }); await waitFor("!!document.querySelector('#kpis')")
+await sleep(1500)
+check('тур: при повторном входе сам не открывается', !(await ev("!!document.querySelector('.tour-card')")))
+await clickSel('#tourBtn')
+check('тур: открывается кнопкой «Как пользоваться» и закрывается Esc', (await waitFor("!!document.querySelector('.tour-card')", 3000)) && (await ev("document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })), true")) && (await waitFor("!document.querySelector('.tour')", 3000)))
+await ev("[...document.querySelectorAll('.user-actions button')].find(b => b.textContent.includes('Пароль')).click()")
+await waitFor("!!document.querySelector('.dialog input')")
+check('окно смены пароля целиком на экране и поля доступны для ввода', await ev("(() => { const d = document.querySelector('.dialog'); const r = d.getBoundingClientRect(); const inp = d.querySelector('input'); const ir = inp.getBoundingClientRect(); return r.top >= 0 && r.left >= 0 && r.bottom <= innerHeight && r.right <= innerWidth && document.elementFromPoint(ir.left + ir.width / 2, ir.top + ir.height / 2) === inp })()"))
+await ev("document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))"); await waitFor("!document.querySelector('.dialog')", 2000)
+await logout()
+
+// ================= 3б. директор
 await login('director', 'Director-2026!'); await waitFor("!!document.querySelector('#kpis')")
 check('директор: листы Сводка, Простои, Брак, Данные (без администрирования)', (await nav()) === 'Сводка, Простои, Брак, Данные', await nav())
 const kd = await kpi()

@@ -300,6 +300,19 @@ const ChartCore = memo(function ChartCore({
       innerHeight,
       resolveDomain: (dataKeys) => {
         let max = 0;
+        // Правка «Профиля»: у столбцов стопкой высота — сумма слоёв, а не самый высокий слой
+        // (иначе верх стопки вылезал за область графика)
+        if (stacked) {
+          for (const d of data) {
+            let total = 0;
+            for (const key of dataKeys) {
+              const value = d[key];
+              if (typeof value === "number") total += value;
+            }
+            if (total > max) max = total;
+          }
+          return [0, (max || 100) * 1.1];
+        }
         for (const d of data) {
           for (const key of dataKeys) {
             const value = d[key];
@@ -311,7 +324,7 @@ const ChartCore = memo(function ChartCore({
         return [0, (max || 100) * 1.1];
       },
     });
-  }, [data, innerHeight, isHorizontal, lines, valueScale]);
+  }, [data, innerHeight, isHorizontal, lines, valueScale, stacked]);
 
   const primaryYScale = getPrimaryYScale(yScales, valueScale);
 

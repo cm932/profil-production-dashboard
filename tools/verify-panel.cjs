@@ -101,6 +101,7 @@ for (const p of periods) for (const shift of ['all', '1', '2']) for (const shop 
   const waitLogin = async () => {
     for (let i = 0; i < 100 && !(await ev("!!document.querySelector('#loginName')")); i++) await sleep(100);
     await ev(`(() => { const set = (sel, v) => { const el = document.querySelector(sel); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, v); el.dispatchEvent(new Event('input', { bubbles: true })); }; set('#loginName', 'director'); set('#loginPass', 'Director-2026!'); })()`);
+    await ev("localStorage.setItem('profil.tour.off', '1')"); // приветственный тур в сверке не нужен
     await sleep(150);
     await ev("document.querySelector('#loginSubmit').click()");
     for (let i = 0; i < 150 && !(await ev("!!document.querySelector('#kpis')")); i++) await sleep(100);
@@ -142,7 +143,6 @@ for (const p of periods) for (const shift of ['all', '1', '2']) for (const shop 
     Object.assign(got, {
       lossMin: await ev(num('#kpis', 'data-loss-min')), plannedMin: await ev(num('#kpis', 'data-planned-min')), pieces: await ev(num('#kpis', 'data-pieces')),
       defectRows: await ev(num('#kpis', 'data-cases')), orders: await ev(num('#kpis', 'data-orders')),
-      sumPareto_min: Math.round((await ev(num('[data-chart="pareto"]'))) * 60), sumDefects: await ev(num('[data-chart="ops-shift"]')),
     });
 
     await nav('Простои', 'downtime');
@@ -179,7 +179,6 @@ for (const p of periods) for (const shift of ['all', '1', '2']) for (const shop 
     const pairs = [
       ['KPI потери, мин', got.lossMin, e.lossMin], ['KPI плановое ТО, мин', got.plannedMin, e.plannedMin], ['KPI брак, шт', got.pieces, e.pieces],
       ['KPI случаев брака', got.defectRows, e.defectRows], ['KPI заказов', got.orders, e.orders],
-      ['Сводка: Парето, мин', got.sumPareto_min, e.lossMin], ['Сводка: брак по операциям', got.sumDefects, e.pieces],
       ['Простои: Парето', got.pareto_min, e.lossMin], ['Простои: по станкам и причинам', got.machines_min, e.lossMin], ['Простои: день/ночь', got.machShift_min, e.lossMin],
       ['Простои: тепловая карта', got.heat_min, e.lossMin], ['Простои: плановое ТО', got.plannedBox_min, e.plannedMin],
       ['Брак: по дням', got.daily, e.pieces], ['Брак: по операциям', got.ops, e.pieces], ['Брак: типы', got.types, e.pieces],

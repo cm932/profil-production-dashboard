@@ -3,6 +3,7 @@ import { AnimatePresence, MotionConfig } from 'motion/react'
 import { animate, stagger } from 'animejs'
 import { Login, MustChange, ServerDown } from '@/components/Auth'
 import { Dialog } from '@/components/Dialog'
+import { Tour, useTour } from '@/components/Tour'
 import { LoadReport, Sidebar, Topbar } from '@/components/Shell'
 import { Button, Card, ToastHost } from '@/components/ui'
 import { nf } from '@/lib/format'
@@ -56,6 +57,7 @@ function ImportDialog() {
 
 function Workspace() {
   const { toast } = useStore()
+  const tour = useTour()
 
   // Вход в приложение: оболочка (сайдбар, панели) появляется каскадом на anime.js, затем работает motion внутри листов
   useEffect(() => {
@@ -68,7 +70,7 @@ function Workspace() {
 
   return (
     <div className="app">
-      <Sidebar />
+      <Sidebar onTour={tour.start} />
       <div className="main">
         <Topbar />
         <main className="content">
@@ -78,6 +80,7 @@ function Workspace() {
       </div>
       <ToastHost toast={toast} />
       <ImportDialog />
+      <Tour open={tour.open} onClose={tour.close} />
       {/* на время снимка PDF закрывает экран: пользователь не видит смену темы и раскрытую таблицу */}
       <div className="export-overlay" aria-hidden><div className="export-msg">Готовлю PDF…</div></div>
     </div>

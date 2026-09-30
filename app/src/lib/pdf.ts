@@ -88,7 +88,7 @@ export async function renderSheetPages(sheetEl: HTMLElement, title: string, capt
     c.lineWidth = 2
     c.beginPath(); c.moveTo(0, h + 8); c.lineTo(pg.width, h + 8); c.stroke()
     c.fillStyle = '#565C56'
-    c.font = '22px "Golos Text", system-ui, "Segoe UI", sans-serif'
+    c.font = '22px -apple-system, "Inter Variable", "Segoe UI", sans-serif'
     c.textBaseline = 'middle'
     c.textAlign = 'left'
     c.fillText('Фабрика «Профиль» · ' + title + ' · ' + caption, 0, h + 8 + footerPx / 2)

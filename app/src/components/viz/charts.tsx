@@ -253,8 +253,8 @@ export function WeeklyLines({ name, wins, series, ymax, height, decimals = 0, un
           {gridH}
           {ymax != null && <Line dataKey="cap" stroke="transparent" strokeWidth={0} showHighlight={false} fadeEdges={false} />}
           {series.map((s, i) => (
-            <Line key={s.label} dataKey={'v' + i} stroke={s.color} strokeWidth={2.5} curve={curveMonotoneX} fadeEdges={false} showMarkers
-              markers={{ radius: 4.5, fill: s.color, stroke: 'var(--bg-surface)', strokeWidth: 2 } as never} />
+            <Line key={s.label} dataKey={'v' + i} stroke={s.color} strokeWidth={2} curve={curveMonotoneX} fadeEdges={false} showMarkers
+              markers={{ radius: 3.5, fill: s.color, stroke: 'var(--bg-surface)', strokeWidth: 1.5 } as never} />
           ))}
           <DateTicks format={(row) => String(row.label)} />
           <SeriesEndLabels keys={series.map((s, i) => ({ key: 'v' + i, color: s.color }))} format={(v) => nf(v, decimals)} />

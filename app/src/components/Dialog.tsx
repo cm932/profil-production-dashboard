@@ -1,10 +1,11 @@
 // Модальное окно VOLT: затемнённая подложка, окно вырастает из центра (scale 0.96 → 1, а не из нуля), Esc закрывает,
 // Tab не выходит за пределы окна, фокус возвращается туда, откуда открыли.
 import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui'
-import { EASE_OUT } from '@/lib/motion'
+import { EASE_OUT, SPRING } from '@/lib/motion'
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
@@ -31,7 +32,9 @@ export function Dialog({ open, onClose, title, children, footer, dismissible = t
     return () => { clearTimeout(t); document.removeEventListener('keydown', onKey); back?.focus?.() }
   }, [open, dismissible, onClose])
 
-  return (
+  // Окно рисуется в корне страницы (портал): иначе его обрезает и сдвигает родитель — например, боковое меню,
+  // у которого включена обрезка содержимого и анимация (так «резалось» окно смены пароля)
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -41,7 +44,7 @@ export function Dialog({ open, onClose, title, children, footer, dismissible = t
           <motion.div
             ref={ref} className="dialog" role="dialog" aria-modal="true" aria-labelledby={titleId} style={{ width }}
             initial={{ opacity: 0, transform: 'scale(0.96)' }} animate={{ opacity: 1, transform: 'scale(1)' }}
-            exit={{ opacity: 0, transform: 'scale(0.98)', transition: { duration: 0.1 } }} transition={{ duration: 0.2, ease: EASE_OUT }}
+            exit={{ opacity: 0, transform: 'scale(0.98)', transition: { duration: 0.12 } }} transition={SPRING}
           >
             <div className="dialog-head">
               <h2 id={titleId} className="dialog-title">{title}</h2>
@@ -52,6 +55,7 @@ export function Dialog({ open, onClose, title, children, footer, dismissible = t
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   )
 }

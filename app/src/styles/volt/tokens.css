@@ -1,137 +1,111 @@
-/* VOLT Design System — tokens.css
-   Подключается первым, до Tailwind. Компоненты обращаются только
-   к семантическим переменным (--bg-*, --text-*, --accent, ...),
-   примитивы (--ink-*, --volt-*) меняются при ребрендинге.
-   Тема: dark по умолчанию; light — по prefers-color-scheme
-   или по <html data-theme="light">. */
-
-/* ============================================================
-   VOLT — design tokens
-   Tier 1: primitives · Tier 2: semantic · Tier 3: component
-   Dark-first. :root = dark. Light is redefined below.
-   ============================================================ */
+/* VOLT Design System — tokens.css, редакция «Профиль × Apple»
+   Структура VOLT сохранена: компоненты обращаются только к семантическим переменным (--bg-*, --text-*, --accent, ...).
+   Переработаны значения по принципам Apple (навык apple-design):
+    · светлая тема по умолчанию: фон #F5F5F7, белые карточки, мягкие тени вместо жёстких рамок;
+    · акцент — системный синий (#007AFF / #0A84FF в тёмной теме) вместо лайма;
+    · шрифт — системный (SF Pro на Mac), на остальных системах — Inter с оптическими размерами;
+    · межбуквенный интервал зависит от кегля: крупное — плотнее, мелкое — свободнее;
+    · тёмная тема — в духе macOS: глубокий серый, без неона. Включается кнопкой (data-theme="dark"). */
 :root{
   /* --- Tier 1. Primitives ------------------------------------ */
-  --ink-950:#0B0C0B; --ink-900:#101210; --ink-850:#151815; --ink-800:#1B1F1C;
-  --ink-700:#262B27; --ink-600:#363D38; --ink-400:#7B847D; --ink-300:#9AA39C;
-  --ink-100:#E8EDE9; --ink-000:#FFFFFF;
-  --paper-100:#F4F4F1; --paper-200:#EDEEE9; --paper-300:#E2E4DD; --paper-400:#C9CCC3;
+  --gray-50:#F5F5F7; --gray-100:#F2F2F7; --gray-150:#EBEBF0; --gray-200:#E5E5EA; --gray-300:#D1D1D6;
+  --gray-500:#8E8E93; --gray-600:#6E6E73; --gray-700:#48484A; --gray-800:#3A3A3C; --gray-850:#2C2C2E;
+  --gray-900:#1C1C1E; --gray-950:#121214; --label:#1D1D1F; --white:#FFFFFF;
+  --blue-light:#007AFF; --blue-dark:#0A84FF;
+  /* совместимость с прежними именами VOLT, на которые ссылаются компоненты */
+  --ink-000:#FFFFFF; --ink-400:var(--gray-500); --ink-950:var(--label);
 
-  --volt-100:#EEFBC9; --volt-300:#DCF78C; --volt-400:#CBF25C;
-  --volt-500:#B4E22E; --volt-600:#8FBA18; --volt-700:#5C7A0C;
+  /* --- Tier 2. Semantic (светлая тема — по умолчанию) --------- */
+  --bg-canvas:var(--gray-50);
+  --bg-surface:var(--white);
+  --bg-elevated:var(--white);
+  --bg-inset:var(--gray-100);
+  --bg-hover:rgba(0,0,0,.04);
+  --bg-active:rgba(0,0,0,.06);
+  --bg-sidebar:rgba(236,236,240,.72);
 
-  --green-400:#3CCB7F; --green-700:#16794C;
-  --amber-400:#F0B429; --amber-700:#8A5A00;
-  --red-400:#FF5C46;   --red-700:#C2321E;
-  --blue-400:#5BA7F7;  --blue-700:#1D63B8;
+  --border-subtle:rgba(0,0,0,.08);
+  --border-strong:rgba(0,0,0,.16);
+  --border-accent:var(--blue-light);
 
-  /* --- Tier 2. Semantic (dark) ------------------------------- */
-  --bg-canvas:var(--ink-950);
-  --bg-surface:var(--ink-900);
-  --bg-elevated:var(--ink-850);
-  --bg-inset:var(--ink-800);
-  --bg-hover:rgba(255,255,255,.04);
-  --bg-active:rgba(255,255,255,.07);
+  --text-primary:var(--label);
+  --text-secondary:#5E5E63;
+  --text-muted:#727277;
+  --text-inverse:var(--white);
+  --text-accent:#0066CC;
 
-  --border-subtle:var(--ink-700);
-  --border-strong:var(--ink-600);
-  --border-accent:var(--volt-400);
+  --accent:var(--blue-light);
+  --accent-hover:#0A6EE0;
+  --accent-pressed:#0062CC;
+  --accent-soft:rgba(0,122,255,.10);
+  --on-accent:#FFFFFF;
 
-  --text-primary:var(--ink-100);
-  --text-secondary:var(--ink-300);
-  --text-muted:var(--ink-400);
-  --text-inverse:var(--ink-950);
-  --text-accent:var(--volt-400);
+  --success:#248A3D; --success-soft:rgba(52,199,89,.14);
+  --warning:#A05A00; --warning-soft:rgba(255,149,0,.14);
+  --danger:#D70015;  --danger-soft:rgba(255,59,48,.10);
+  --info:#0066CC;    --info-soft:rgba(0,122,255,.10);
 
-  --accent:var(--volt-400);
-  --accent-hover:var(--volt-300);
-  --accent-pressed:var(--volt-500);
-  --accent-soft:color-mix(in oklab, var(--volt-400) 14%, transparent);
-  --on-accent:var(--ink-950);
-
-  --success:var(--green-400); --success-soft:color-mix(in oklab, var(--green-400) 16%, transparent);
-  --warning:var(--amber-400); --warning-soft:color-mix(in oklab, var(--amber-400) 16%, transparent);
-  --danger:var(--red-400);    --danger-soft:color-mix(in oklab, var(--red-400) 16%, transparent);
-  --info:var(--blue-400);     --info-soft:color-mix(in oklab, var(--blue-400) 16%, transparent);
-
-  --focus-ring:var(--volt-400);
-  --shadow-1:0 1px 2px rgba(0,0,0,.5);
-  --shadow-2:0 8px 24px -8px rgba(0,0,0,.7);
-  --shadow-3:0 24px 60px -20px rgba(0,0,0,.85);
-  --glow:0 0 0 1px color-mix(in oklab, var(--volt-400) 40%, transparent), 0 8px 32px -8px color-mix(in oklab, var(--volt-400) 35%, transparent);
-  --grid-line:color-mix(in oklab, var(--ink-100) 8%, transparent);
+  --focus-ring:rgba(0,122,255,.55);
+  --shadow-1:0 1px 2px rgba(0,0,0,.04), 0 0 0 .5px rgba(0,0,0,.04);
+  --shadow-2:0 1px 2px rgba(0,0,0,.04), 0 6px 20px -6px rgba(0,0,0,.08);
+  --shadow-3:0 24px 64px -16px rgba(0,0,0,.22), 0 0 0 .5px rgba(0,0,0,.06);
+  --glow:0 0 0 1.5px rgba(0,122,255,.55), 0 6px 20px -6px rgba(0,122,255,.18);
+  --grid-line:rgba(0,0,0,.06);
 
   /* --- Type -------------------------------------------------- */
-  --font-display:"Unbounded","Golos Text",system-ui,sans-serif;
-  --font-ui:"Golos Text",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --font-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --font-ui:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter Variable","Inter","Segoe UI",system-ui,sans-serif;
+  --font-display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter Variable","Inter","Segoe UI",system-ui,sans-serif;
+  /* моноширинный шрифт больше не нужен для цифр: у системного шрифта есть табличные цифры (tabular-nums) */
+  --font-mono:var(--font-ui);
 
   --text-2xs:.6875rem; --text-xs:.75rem;  --text-sm:.8125rem; --text-base:.9375rem;
   --text-md:1.0625rem; --text-lg:1.25rem; --text-xl:1.5625rem; --text-2xl:2rem;
   --text-3xl:2.625rem; --text-4xl:3.5rem;
 
-  --lh-tight:1.08; --lh-snug:1.25; --lh-normal:1.5; --lh-loose:1.7;
-  --track-tight:-.02em; --track-normal:0; --track-wide:.06em; --track-caps:.14em;
+  --lh-tight:1.1; --lh-snug:1.25; --lh-normal:1.47; --lh-loose:1.6;
+  /* интервал по кеглю: заголовки плотнее, текст около нуля, мелкие подписи свободнее */
+  --track-display:-.022em; --track-title:-.014em; --track-body:-.006em; --track-small:0em;
+  --track-tight:var(--track-title); --track-normal:0; --track-wide:.02em; --track-caps:.04em;
 
   /* --- Space (base 4) ---------------------------------------- */
   --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:20px; --s-6:24px;
   --s-8:32px; --s-10:40px; --s-12:48px; --s-16:64px; --s-20:80px; --s-24:96px;
 
   /* --- Radius ------------------------------------------------ */
-  --r-xs:4px; --r-sm:6px; --r-md:10px; --r-lg:14px; --r-xl:20px; --r-pill:999px;
+  --r-xs:5px; --r-sm:7px; --r-md:10px; --r-lg:16px; --r-xl:22px; --r-pill:999px;
 
   /* --- Motion ------------------------------------------------ */
   --dur-1:120ms; --dur-2:200ms; --dur-3:320ms; --dur-4:600ms;
   --ease-standard:cubic-bezier(.2,0,0,1);
-  --ease-out:cubic-bezier(.16,1,.3,1);
+  --ease-out:cubic-bezier(.23,1,.32,1);
   --ease-in:cubic-bezier(.7,0,.84,0);
 
-  --sidebar-w:248px;
-  color-scheme:dark;
-}
-/* Light theme — system preference, unless the viewer chose dark */
-@media (prefers-color-scheme:light){
-  :root:not([data-theme="dark"]){
-    --bg-canvas:var(--paper-100); --bg-surface:var(--ink-000); --bg-elevated:var(--ink-000);
-    --bg-inset:var(--paper-200); --bg-hover:rgba(11,12,11,.04); --bg-active:rgba(11,12,11,.07);
-    --border-subtle:var(--paper-300); --border-strong:var(--paper-400);
-    --text-primary:#0E110F; --text-secondary:#565C56; --text-muted:#646B63;
-    --text-inverse:var(--ink-000); --text-accent:var(--volt-700);
-    --accent:var(--volt-400); --accent-hover:var(--volt-500); --accent-pressed:var(--volt-600);
-    --success:var(--green-700); --warning:var(--amber-700); --danger:var(--red-700); --info:var(--blue-700);
-    --success-soft:color-mix(in oklab, var(--green-700) 12%, transparent);
-    --warning-soft:color-mix(in oklab, var(--amber-700) 12%, transparent);
-    --danger-soft:color-mix(in oklab, var(--red-700) 12%, transparent);
-    --info-soft:color-mix(in oklab, var(--blue-700) 12%, transparent);
-    --accent-soft:color-mix(in oklab, var(--volt-500) 22%, transparent);
-    --focus-ring:var(--volt-700);
-    --shadow-1:0 1px 2px rgba(14,17,15,.08);
-    --shadow-2:0 8px 24px -10px rgba(14,17,15,.18);
-    --shadow-3:0 24px 60px -24px rgba(14,17,15,.28);
-    --glow:0 0 0 1px color-mix(in oklab, var(--volt-600) 45%, transparent), 0 8px 28px -10px color-mix(in oklab, var(--volt-600) 30%, transparent);
-    --grid-line:color-mix(in oklab, #0E110F 8%, transparent);
-    color-scheme:light;
-  }
-}
-/* Light theme — explicit choice */
-:root[data-theme="light"]{
-  --bg-canvas:var(--paper-100); --bg-surface:var(--ink-000); --bg-elevated:var(--ink-000);
-  --bg-inset:var(--paper-200); --bg-hover:rgba(11,12,11,.04); --bg-active:rgba(11,12,11,.07);
-  --border-subtle:var(--paper-300); --border-strong:var(--paper-400);
-  --text-primary:#0E110F; --text-secondary:#565C56; --text-muted:#646B63;
-  --text-inverse:var(--ink-000); --text-accent:var(--volt-700);
-  --accent:var(--volt-400); --accent-hover:var(--volt-500); --accent-pressed:var(--volt-600);
-  --success:var(--green-700); --warning:var(--amber-700); --danger:var(--red-700); --info:var(--blue-700);
-  --success-soft:color-mix(in oklab, var(--green-700) 12%, transparent);
-  --warning-soft:color-mix(in oklab, var(--amber-700) 12%, transparent);
-  --danger-soft:color-mix(in oklab, var(--red-700) 12%, transparent);
-  --info-soft:color-mix(in oklab, var(--blue-700) 12%, transparent);
-  --accent-soft:color-mix(in oklab, var(--volt-500) 22%, transparent);
-  --focus-ring:var(--volt-700);
-  --shadow-1:0 1px 2px rgba(14,17,15,.08);
-  --shadow-2:0 8px 24px -10px rgba(14,17,15,.18);
-  --shadow-3:0 24px 60px -24px rgba(14,17,15,.28);
-  --glow:0 0 0 1px color-mix(in oklab, var(--volt-600) 45%, transparent), 0 8px 28px -10px color-mix(in oklab, var(--volt-600) 30%, transparent);
-  --grid-line:color-mix(in oklab, #0E110F 8%, transparent);
+  --sidebar-w:232px;
   color-scheme:light;
+}
+/* Тёмная тема — только по выбору (кнопка в боковом меню) */
+:root[data-theme="dark"]{
+  --bg-canvas:var(--gray-950);
+  --bg-surface:var(--gray-900);
+  --bg-elevated:var(--gray-850);
+  --bg-inset:var(--gray-850);
+  --bg-hover:rgba(255,255,255,.05);
+  --bg-active:rgba(255,255,255,.08);
+  --bg-sidebar:rgba(28,28,30,.72);
+  --border-subtle:rgba(255,255,255,.08);
+  --border-strong:rgba(255,255,255,.16);
+  --border-accent:var(--blue-dark);
+  --text-primary:#F5F5F7; --text-secondary:#AEAEB2; --text-muted:#8E8E93; --text-inverse:var(--label); --text-accent:#409CFF;
+  --accent:var(--blue-dark); --accent-hover:#3395FF; --accent-pressed:#0071E3; --accent-soft:rgba(10,132,255,.18); --on-accent:#FFFFFF;
+  --success:#30D158; --success-soft:rgba(48,209,88,.16);
+  --warning:#FF9F0A; --warning-soft:rgba(255,159,10,.16);
+  --danger:#FF453A;  --danger-soft:rgba(255,69,58,.16);
+  --info:#64D2FF;    --info-soft:rgba(100,210,255,.14);
+  --focus-ring:rgba(10,132,255,.7);
+  --shadow-1:0 0 0 .5px rgba(255,255,255,.06);
+  --shadow-2:0 0 0 .5px rgba(255,255,255,.06), 0 8px 24px -8px rgba(0,0,0,.6);
+  --shadow-3:0 24px 64px -16px rgba(0,0,0,.7), 0 0 0 .5px rgba(255,255,255,.08);
+  --glow:0 0 0 1.5px rgba(10,132,255,.6), 0 8px 24px -8px rgba(10,132,255,.25);
+  --grid-line:rgba(255,255,255,.07);
+  color-scheme:dark;
 }

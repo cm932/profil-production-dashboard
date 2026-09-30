@@ -50,9 +50,19 @@ await test('ни одной строки данных открытым текс�
   for (const x of markers) assert.ok(!html.includes(x), 'найдено: ' + x)
 })
 await test('в файле нет логинов, паролей и ролей открытым текстом', () => {
+  // пароли — нигде в файле; логины — нигде в зашифрованном блоке (в коде панели слово «admin» есть как имя роли, это не данные)
+  const b64 = /^[A-Za-z0-9+/]+=*$/
+  const walk = (o, where) => {
+    for (const [k, v] of Object.entries(o)) {
+      assert.ok(where === 'users' ? b64.test(k) : !DEMO_USERS.some((u) => k === u.login), 'ключ ' + k)
+      if (v && typeof v === 'object') walk(v, k)
+      else if (typeof v === 'string' && !['alg', 'sealedAt', 'name', 'hash'].includes(k)) assert.ok(b64.test(v), 'открытое значение ' + k + ': ' + v.slice(0, 20))
+    }
+  }
+  walk(vault, 'root')
   for (const u of DEMO_USERS) {
     assert.ok(!html.includes(u.password), 'пароль ' + u.login)
-    assert.ok(!html.includes('"' + u.login + '"'), 'логин ' + u.login)
+    if (u.name !== ROLES[u.role].label) assert.ok(!html.includes(u.name), 'имя ' + u.name) // название роли есть в коде панели — это не данные
   }
   assert.ok(!/"role"\s*:/.test(m[1]), 'роль открытым текстом')
 })

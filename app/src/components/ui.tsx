@@ -2,7 +2,7 @@
 // Движение — motion: нажатие кнопки, скользящая «таблетка» переключателей, появление тоста.
 import { forwardRef, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { EASE_OUT, reveal } from '@/lib/motion'
+import { EASE_OUT, SPRING, reveal } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import type { ToastMsg } from '@/store'
 
@@ -64,7 +64,7 @@ export function Segmented<T extends string>({ items, value, onChange, label, siz
         const on = it.id === value
         return (
           <button key={it.id} role="tab" aria-selected={on} title={it.title} onClick={() => onChange(it.id)} className="tab">
-            {on && <motion.span layoutId={'pill' + group} className="tab-pill" transition={{ duration: 0.18, ease: EASE_OUT }} />}
+            {on && <motion.span layoutId={'pill' + group} className="tab-pill" transition={SPRING} />}
             <span className="tab-label">{it.label}</span>
           </button>
         )

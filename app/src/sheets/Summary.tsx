@@ -1,12 +1,11 @@
 import { motion } from 'motion/react'
 import { Settings2 } from 'lucide-react'
 import { CountUp } from '@/components/CountUp'
-import { InsightGrid } from '@/components/InsightPanel'
-import { Field, FitCard, Popover } from '@/components/ui'
-import { OpsByShiftChart, ParetoChart } from '@/components/viz/charts'
+import { AllInsights, InsightGrid } from '@/components/InsightPanel'
+import { Field, Popover } from '@/components/ui'
 import { hours, nf, plural, rub } from '@/lib/format'
 import { EASE_OUT, reveal } from '@/lib/motion'
-import { daysBetween, shownShifts } from '@/lib/model'
+import { daysBetween } from '@/lib/model'
 import { useStore } from '@/store'
 import { SheetFrame } from './SheetFrame'
 
@@ -35,11 +34,10 @@ function Kpi({ i, label, value, format, unit, sub, progress, title }: {
 }
 
 export function Summary() {
-  const { summary: s, F, filters, params, setParams, insights, showMoney } = useStore()
+  const { summary: s, filters, params, setParams, insights, showMoney } = useStore()
   const shiftH = params.shiftHours
   const note = filters.from && daysBetween(filters.from, filters.to) >= 14
     ? 'Недели считаются от конца выбранного периода (по 7 дней); неполная неделя в начале в сравнении не участвует.' : ''
-  const U = F.D.filter((r) => !r.planned)
 
   // Допущения лежат в кнопке в шапке листа; в PDF та же информация — строкой под заголовком (кнопки в PDF нет)
   const assumptions = (
@@ -54,7 +52,7 @@ export function Summary() {
   )
 
   return (
-    <SheetFrame id="summary" actions={showMoney ? assumptions : undefined}
+    <SheetFrame id="summary" actions={<><AllInsights insights={insights} note={note} />{showMoney && assumptions}</>}
       captionExtra={showMoney ? 'ставки: ' + nf(params.hourCost) + ' ₽/ч простоя, ' + nf(params.pieceCost) + ' ₽/деталь, смена ' + nf(params.shiftHours, 1) + ' ч' : undefined}>
       <div className="kpis" id="kpis" data-cols={showMoney ? 4 : 3} data-loss-min={s.lossMin} data-planned-min={s.plannedMin} data-pieces={s.pieces} data-cases={s.defectCases} data-orders={s.orders}>
         <Kpi i={0} label="Потери времени" value={s.lossMin / 60} format={(n) => nf(n, 1)} unit="ч"
@@ -68,17 +66,7 @@ export function Summary() {
           sub={'простои ' + rub(s.lossRub) + ' + брак ' + rub(s.defectRub)} />}
       </div>
 
-      <div className="fit-row summary-main">
-        <InsightGrid insights={insights} note={note} />
-        <div className="fit-col">
-          <FitCard i={2} title="Где теряем время" sub="простои по причинам, часы">
-            {U.length ? <ParetoChart U={U} /> : <div className="empty">Нет простоев за выбранный период</div>}
-          </FitCard>
-          <FitCard i={3} title="Где возникает брак" sub="по операциям и сменам, шт">
-            {F.B.length ? <OpsByShiftChart B={F.B} shifts={shownShifts(filters)} /> : <div className="empty">Нет брака за выбранный период</div>}
-          </FitCard>
-        </div>
-      </div>
+      <InsightGrid insights={insights} note={note} />
     </SheetFrame>
   )
 }

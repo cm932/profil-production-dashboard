@@ -288,7 +288,8 @@ export function createApp({ db, config }) {
 
       if (method === 'POST' && m[2]) {
         const temp = tempPassword()
-        db.prepare('UPDATE users SET pw_hash = ?, must_change = 1, failed = 0, locked_until = 0 WHERE id = ?').run(await hashPassword(temp), id)
+        // demo = 0: демо-пароль больше не действует — экран входа перестаёт его показывать
+        db.prepare('UPDATE users SET pw_hash = ?, must_change = 1, failed = 0, locked_until = 0, demo = 0 WHERE id = ?').run(await hashPassword(temp), id)
         destroyUserSessions(db, id)
         audit(db, { user, action: 'password_reset', entity: `user#${id}`, detail: target.login, ip })
         return send(res, 200, { tempPassword: temp })

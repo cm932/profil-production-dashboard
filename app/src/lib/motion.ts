@@ -16,3 +16,7 @@ export const reveal = (i = 0) => ({
   animate: { opacity: 1, transform: 'translateY(0px)' },
   transition: { duration: 0.28, ease: EASE_OUT, delay: Math.min(i, 8) * 0.04 },
 })
+
+/** Пружина без отскока (критическое затухание) — основная для интерфейса по принципам Apple:
+ *  анимация начинается с текущего значения, её можно прервать и развернуть в любой момент. */
+export const SPRING = { type: 'spring', bounce: 0, duration: 0.35 } as const

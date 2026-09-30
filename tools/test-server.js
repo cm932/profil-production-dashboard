@@ -309,6 +309,13 @@ await test('сброс пароля администратором: новый �
   assert.equal((await new Client().post('/api/login', { login: 'ivan', password: 'Eshche-Odin-88' })).status, 401)
   assert.equal((await new Client().post('/api/login', { login: 'ivan', password: r.json.tempPassword })).status, 200)
 })
+await test('после сброса пароля экран входа больше не показывает демо-пароль этой учётки', async () => {
+  s.db.prepare("UPDATE users SET demo = 1 WHERE login = 'ivan'").run() // как у демо-учётки
+  assert.equal((await clients.admin.post('/api/users/' + newUser.user.id + '/reset-password')).status, 200)
+  assert.equal(s.db.prepare("SELECT demo FROM users WHERE login = 'ivan'").get().demo, 0)
+  const meta = await (await fetch(base + '/api/meta')).json()
+  assert.ok(!meta.demoUsers.some((u) => u.login === 'ivan'))
+})
 await test('нельзя отключить себя и последнего администратора; обычным ролям управление недоступно', async () => {
   const a = clients.admin
   const me = (await a.get('/api/me')).json.user

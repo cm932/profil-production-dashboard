@@ -6,6 +6,7 @@
 @import "./styles/volt/components.css" layer(components);
 @import "./styles/viz.css" layer(base);
 @import "./styles/app.css" layer(components);
+@import "./styles/apple.css" layer(components);
 
 @custom-variant dark (&:is([data-theme="dark"] *));
 
@@ -31,9 +32,9 @@
   --color-foreground: var(--text-primary);
   --color-muted: var(--bg-inset);
   --color-secondary: var(--text-secondary);
-  --font-display: "Unbounded", "Golos Text", system-ui, sans-serif;
-  --font-sans: "Golos Text", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter Variable", "Segoe UI", system-ui, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter Variable", "Segoe UI", system-ui, sans-serif;
+  --font-mono: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter Variable", "Segoe UI", system-ui, sans-serif;
 }
 
 :root {

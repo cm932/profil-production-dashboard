@@ -29,7 +29,9 @@ export function SheetFrame({ id, children, views, actions, captionExtra, caption
   const [view, setViewState] = useState(() => lastView[id] ?? views?.[0]?.id ?? '')
   const setView = (v: string) => { lastView[id] = v; setViewState(v) }
   const cur = views?.find((v) => v.id === view) ?? views?.[0]
-  const caption = captionOverride ?? filterCaption(filters, shops.length === 1) + (captionExtra ? ' · ' + captionExtra : '')
+  const shortCaption = captionOverride ?? filterCaption(filters, shops.length === 1)
+  // на экране — коротко; в PDF (подпись страниц) — вместе с допущениями, от которых зависят цифры
+  const caption = shortCaption + (captionExtra ? ' · ' + captionExtra : '')
 
   // Служебный вход для автоматической проверки PDF: возвращает страницы листа картинками (в интерфейсе не используется)
   useEffect(() => {
@@ -61,7 +63,7 @@ export function SheetFrame({ id, children, views, actions, captionExtra, caption
       <div className="sheet-head">
         <div className="sheet-title">
           <h1 className="h-title">{TITLE[id]}</h1>
-          <p className="sheet-caption filter-caption" title={caption}>{caption}</p>
+          <p className="sheet-caption filter-caption" title={caption}>{exporting ? caption : shortCaption}</p>
         </div>
         {views && views.length > 1 && (
           <div className="view-tabs no-print">

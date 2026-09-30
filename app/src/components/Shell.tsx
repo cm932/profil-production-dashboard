@@ -1,11 +1,11 @@
 import { useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { CalendarDays, KeyRound, LayoutDashboard, LogOut, Moon, RotateCcw, ShieldAlert, ShieldCheck, Sun, Table2, Timer, Upload, X } from 'lucide-react'
+import { CalendarDays, CircleHelp, KeyRound, LayoutDashboard, LogOut, Moon, RotateCcw, ShieldAlert, ShieldCheck, Sun, Table2, Timer, Upload, X } from 'lucide-react'
 import { PasswordDialog } from '@/components/Auth'
 import { Badge, Button, Segmented } from '@/components/ui'
 import { useTheme } from '@/hooks/useTheme'
 import { nf } from '@/lib/format'
-import { EASE_OUT } from '@/lib/motion'
+import { EASE_OUT, SPRING } from '@/lib/motion'
 import type { SheetId } from '@/lib/types'
 import { useStore } from '@/store'
 
@@ -18,9 +18,9 @@ const NAV: { id: SheetId; label: string; icon: typeof Timer }[] = [
 ]
 export const SHEET_TITLE: Record<SheetId, string> = { summary: 'Сводка', downtime: 'Простои', defects: 'Брак', data: 'Данные', admin: 'Администрирование' }
 const ICON = { size: 16, strokeWidth: 1.5 } as const
-const SOURCE: Partial<Record<string, string>> = { app: 'база данных SQLite', sealed: 'зашифрованный файл' }
+const SOURCE: Partial<Record<string, string>> = { app: 'база SQLite', sealed: 'зашифрованный файл' }
 
-export function Sidebar() {
+export function Sidebar({ onTour }: { onTour: () => void }) {
   const { sheet, setSheet, journals, mode, user, perms, logout, canReset, upload, resetDefaults } = useStore()
   const { theme, toggle } = useTheme()
   const input = useRef<HTMLInputElement>(null)
@@ -39,8 +39,8 @@ export function Sidebar() {
       <nav className="nav" aria-label="Листы">
         <div className="eyebrow">Листы</div>
         {items.map(({ id, label, icon: Icon }) => (
-          <button key={id} className="nav-item" aria-current={sheet === id ? 'page' : undefined} onClick={() => setSheet(id)}>
-            {sheet === id && <motion.span layoutId="nav-pill" className="nav-pill" transition={{ duration: 0.18, ease: EASE_OUT }} />}
+          <button key={id} className="nav-item" data-nav={id} aria-current={sheet === id ? 'page' : undefined} onClick={() => setSheet(id)}>
+            {sheet === id && <motion.span layoutId="nav-pill" className="nav-pill" transition={SPRING} />}
             <Icon {...ICON} />
             <span>{label}</span>
           </button>
@@ -54,7 +54,7 @@ export function Sidebar() {
         </dl>
         <Badge tone={mode === 'app' ? 'success' : canReset ? 'accent' : 'neutral'} dot>{SOURCE[mode] ?? (canReset ? 'загруженные файлы' : 'исходные файлы')}</Badge>
         {/* единственная первичная кнопка на экране — «загрузить данные» */}
-        {perms.upload && mode !== 'boot' && <Button variant="primary" className="w-full" onClick={() => input.current?.click()}><Upload {...ICON} />Загрузить данные</Button>}
+        {perms.upload && mode !== 'boot' && <Button variant="primary" className="w-full" id="fileInput-btn" onClick={() => input.current?.click()}><Upload {...ICON} />Загрузить данные</Button>}
         {perms.upload && mode !== 'boot' && <input
           ref={input} id="fileInput" type="file" accept=".csv,.txt,.xlsx,.xls,.xlsm" multiple hidden
           onChange={(e) => { const files = [...(e.target.files ?? [])]; e.target.value = ''; if (files.length) void upload(files) }}
@@ -73,9 +73,12 @@ export function Sidebar() {
           <PasswordDialog open={pwd} onClose={() => setPwd(false)} />
         </div>
       )}
+      <div className="side-actions">
+      <button className="side-btn" id="tourBtn" onClick={onTour}><CircleHelp {...ICON} /><span>Как пользоваться</span></button>
       <button className="theme-btn" onClick={toggle} aria-label={theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'}>
         {theme === 'dark' ? <Sun {...ICON} /> : <Moon {...ICON} />}<span>{theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}</span>
       </button>
+      </div>
     </aside>
   )
 }
