@@ -1,8 +1,8 @@
 // Примитивы VOLT на классах из components.css (дизайн-система: «если Tailwind не используется»).
 // Движение — motion: нажатие кнопки, скользящая «таблетка» переключателей, появление тоста.
-import { forwardRef, useId, type ButtonHTMLAttributes, type ReactNode } from 'react'
+import { forwardRef, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { EASE_OUT } from '@/lib/motion'
+import { EASE_OUT, reveal } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import type { ToastMsg } from '@/store'
 
@@ -110,3 +110,48 @@ export const Field = ({ label, hint, children }: { label: string; hint?: string;
     {hint && <span className="hint">{hint}</span>}
   </label>
 )
+
+/* ---------------------------------------------------------------- FitCard */
+/** Карточка, которая занимает свою ячейку сетки целиком: заголовок сверху, содержимое растягивается на всю оставшуюся высоту.
+ *  Так лист собирается в экран без прокрутки. Появляется с лёгким сдвигом (каскад 40 мс). */
+export function FitCard({ i = 0, title, sub, aside, accent, className, children, ...rest }: {
+  i?: number; title?: ReactNode; sub?: ReactNode; aside?: ReactNode; accent?: boolean; className?: string; children: ReactNode
+} & Omit<React.HTMLAttributes<HTMLDivElement>, "title" | "onDrag" | "onDragStart" | "onDragEnd" | "onAnimationStart">) {
+  return (
+    <motion.div {...reveal(i)} className={cn("card fit-card", accent && "card--accent", className)} {...rest}>
+      {(title || aside) && <CardHead title={title} sub={sub} aside={aside} />}
+      <div className="card-body">{children}</div>
+    </motion.div>
+  )
+}
+
+/* ---------------------------------------------------------------- Popover */
+/** Всплывающая панель у кнопки. Вырастает из угла кнопки (transform-origin у триггера, а не по центру), закрывается по клику снаружи и Esc. */
+export function Popover({ label, icon, children }: { label: string; icon?: ReactNode; children: ReactNode }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const onDoc = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false) }
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false) }
+    document.addEventListener("mousedown", onDoc)
+    document.addEventListener("keydown", onKey)
+    return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey) }
+  }, [open])
+  return (
+    <div className="popover-wrap no-print" ref={ref}>
+      <Button aria-expanded={open} aria-haspopup="dialog" onClick={() => setOpen((o) => !o)}>{icon}{label}</Button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="popover" role="dialog" aria-label={label} style={{ transformOrigin: "top right" }}
+            initial={{ opacity: 0, transform: "scale(0.96)" }} animate={{ opacity: 1, transform: "scale(1)" }}
+            exit={{ opacity: 0, transition: { duration: 0.1 } }} transition={{ duration: 0.16, ease: EASE_OUT }}
+          >
+            {children}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}

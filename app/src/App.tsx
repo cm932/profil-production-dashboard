@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { AnimatePresence, MotionConfig } from 'motion/react'
 import { animate, stagger } from 'animejs'
-import { FilterBar, LoadReport, Sidebar, Topbar } from '@/components/Shell'
+import { LoadReport, Sidebar, Topbar } from '@/components/Shell'
 import { ToastHost } from '@/components/ui'
 import { prefersReduced } from '@/lib/motion'
 import { Defects } from '@/sheets/Defects'
@@ -28,7 +28,7 @@ function Shell() {
   // Вход в приложение: оболочка (сайдбар, панели) появляется каскадом на anime.js, затем работает motion внутри листов
   useEffect(() => {
     if (prefersReduced()) return
-    const targets = ['.brand', '.nav-item', '.sidebar-foot', '.topbar', '.filterbar']
+    const targets = ['.brand', '.nav-item', '.sidebar-foot', '.topbar']
     const els = targets.flatMap((s) => Array.from(document.querySelectorAll<HTMLElement>(s)))
     const a = animate(els, { opacity: [0, 1], translateY: [6, 0], duration: 320, ease: 'outQuart', delay: stagger(36) })
     return () => { a.cancel(); els.forEach((e) => { e.style.opacity = ''; e.style.transform = '' }) }
@@ -39,13 +39,14 @@ function Shell() {
       <Sidebar />
       <div className="main">
         <Topbar />
-        <FilterBar />
         <main className="content">
           <LoadReport />
           <Sheets />
         </main>
       </div>
       <ToastHost toast={toast} />
+      {/* на время снимка PDF закрывает экран: пользователь не видит смену темы и раскрытую таблицу */}
+      <div className="export-overlay" aria-hidden><div className="export-msg">Готовлю PDF…</div></div>
     </div>
   )
 }

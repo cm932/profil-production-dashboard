@@ -10,12 +10,13 @@ import { useStore } from '@/store'
 
 const TITLE: Record<SheetId, string> = { summary: 'Сводка', downtime: 'Простои', defects: 'Брак', data: 'Данные' }
 
-/** Общий каркас листа: заголовок с фильтрами и кнопка «Скачать PDF», сохраняющая именно этот лист. */
-export function SheetFrame({ id, children }: { id: SheetId; children: ReactNode }) {
+/** Общий каркас листа: компактная шапка (название, фильтры, действия) и кнопка «Скачать PDF», сохраняющая именно этот лист.
+ *  Содержимое листа занимает всю оставшуюся высоту окна — прокрутки страницы нет. */
+export function SheetFrame({ id, children, actions, captionExtra }: { id: SheetId; children: ReactNode; actions?: ReactNode; captionExtra?: string }) {
   const { filters, notify } = useStore()
   const ref = useRef<HTMLElement>(null)
   const [busy, setBusy] = useState(false)
-  const caption = filterCaption(filters)
+  const caption = filterCaption(filters) + (captionExtra ? ' · ' + captionExtra : '')
 
   // Служебный вход для автоматической проверки PDF: возвращает страницы листа картинками (в интерфейсе не используется)
   useEffect(() => {
@@ -41,15 +42,18 @@ export function SheetFrame({ id, children }: { id: SheetId; children: ReactNode 
 
   return (
     <motion.section
-      ref={ref} id={'sheet-' + id} className="sheet" data-title={TITLE[id]}
+      ref={ref} id={'sheet-' + id} className={'sheet sheet--' + id} data-title={TITLE[id]}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.08 } }} transition={{ duration: 0.16, ease: EASE_OUT }}
     >
       <div className="sheet-head">
-        <div>
+        <div className="sheet-title">
           <h1 className="h-title">{TITLE[id]}</h1>
-          <p className="eyebrow sheet-sub filter-caption">{caption}</p>
+          <p className="sheet-caption filter-caption">{caption}</p>
         </div>
-        <Button className="no-print pdf-btn" onClick={pdf} disabled={busy}><FileDown size={16} strokeWidth={1.5} />{busy ? 'Готовлю PDF…' : 'Скачать PDF'}</Button>
+        <div className="sheet-actions no-print">
+          {actions}
+          <Button className="pdf-btn" onClick={pdf} disabled={busy}><FileDown size={16} strokeWidth={1.5} />{busy ? 'Готовлю PDF…' : 'Скачать PDF'}</Button>
+        </div>
       </div>
       {children}
     </motion.section>

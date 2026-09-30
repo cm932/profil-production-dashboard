@@ -1,8 +1,6 @@
-import { motion } from 'motion/react'
-import { Card, CardHead } from '@/components/ui'
+import { Card, FitCard } from '@/components/ui'
 import { DailyDefectsChart, DefectTypesChart, Legend, OpsByShiftChart, WeeklyLines } from '@/components/viz/charts'
 import { shiftColor } from '@/lib/colors'
-import { reveal } from '@/lib/motion'
 import { addDays, inWin, shownShifts, sortedDesc, sum, sumBy, windows } from '@/lib/model'
 import { useStore } from '@/store'
 import { SheetFrame } from './SheetFrame'
@@ -26,48 +24,34 @@ export function Defects() {
 
   return (
     <SheetFrame id="defects">
-      <div className="grid-2">
-        <motion.div {...reveal(0)}>
-          <Card>
-            <CardHead title="Динамика брака по дням" sub="забраковано деталей за день; цвет — смена" />
-            <DailyDefectsChart B={B} days={days} shifts={shifts} />
-          </Card>
-        </motion.div>
-        <motion.div {...reveal(1)}>
-          <Card>
-            <CardHead title="Брак по операциям и сменам" sub="операция-источник, где возник дефект" />
-            <OpsByShiftChart B={B} shifts={shifts} />
-          </Card>
-        </motion.div>
+      <div className="fit-row cols-2-1">
+        <FitCard i={0} title="Динамика брака по дням" sub="забраковано деталей за день; цвет — смена">
+          <DailyDefectsChart B={B} days={days} shifts={shifts} />
+        </FitCard>
+        <FitCard i={1} title="Брак по операциям и сменам" sub="операция-источник, где возник дефект">
+          <OpsByShiftChart B={B} shifts={shifts} />
+        </FitCard>
       </div>
 
-      {wins.length >= 2 && (
-        <>
-          <div>
-            <h2 className="block-title">Недели: день и ночь по каждой операции</h2>
-            <p className="eyebrow block-sub">одинаковая шкала на всех графиках, чтобы операции можно было сравнивать</p>
-          </div>
-          <Legend items={shifts.map((s) => ({ label: s === 1 ? 'День' : 'Ночь', color: shiftColor(s) }))} />
-          <div className="grid-4">
-            {ops.map((o, i) => (
-              <motion.div key={o} {...reveal(i + 2)}>
-                <Card>
-                  <CardHead title={o} />
-                  <WeeklyLines name={'week-' + i} wins={wins} series={series[i]} ymax={top} />
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </>
-      )}
-
-      <div className="grid-2">
-        <motion.div {...reveal(6)}>
-          <Card>
-            <CardHead title="Типы дефектов" sub="каждый тип привязан к операции-источнику (в подсказке)" />
-            <DefectTypesChart B={B} />
-          </Card>
-        </motion.div>
+      <div className="fit-row cols-2-1">
+        <FitCard i={2} title="Недели: день и ночь по каждой операции" sub="одинаковая шкала на всех графиках — операции можно сравнивать между собой">
+          {wins.length >= 2 ? (
+            <>
+              <Legend items={shifts.map((s) => ({ label: s === 1 ? 'День' : 'Ночь', color: shiftColor(s) }))} />
+              <div className="weekly-grid">
+                {ops.map((o, i) => (
+                  <div key={o} className="weekly-cell">
+                    <div className="weekly-title">{o}</div>
+                    <WeeklyLines name={'week-' + i} wins={wins} series={series[i]} ymax={top} />
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : <div className="empty">Для недельной динамики нужен период не короче двух недель.</div>}
+        </FitCard>
+        <FitCard i={3} title="Типы дефектов" sub="каждый тип привязан к операции-источнику (в подсказке)">
+          <DefectTypesChart B={B} />
+        </FitCard>
       </div>
     </SheetFrame>
   )

@@ -1,5 +1,7 @@
-import { useMemo, useState } from 'react'
-import { Segmented } from '@/components/ui'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { Button, Segmented } from '@/components/ui'
+import { useExporting } from '@/hooks/useExporting'
 import { hours, nf, ruDate, SHIFT_NAME } from '@/lib/format'
 import { sum } from '@/lib/model'
 import type { Defect, Downtime } from '@/lib/types'
@@ -23,12 +25,29 @@ const COLS: Record<Kind, Col[]> = {
   ],
 }
 
+const ROW_H = 46 // высота строки таблицы (VOLT: 44 + линия)
+
 export function DataSheet() {
   const { F, journals } = useStore()
+  const exporting = useExporting()
   const [kind, setKind] = useState<Kind>('downtime')
   const [q, setQ] = useState('')
   const [sort, setSort] = useState<{ key: string | null; dir: 1 | -1 }>({ key: null, dir: 1 })
+  const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState(12)
+  const wrapRef = useRef<HTMLDivElement>(null)
   const cols = COLS[kind]
+
+  // Строк на странице — сколько помещается в карточку: таблица без прокрутки, листается пагинацией
+  useLayoutEffect(() => {
+    const el = wrapRef.current
+    if (!el) return
+    const calc = () => setPageSize(Math.max(5, Math.floor((el.clientHeight - 44) / ROW_H)))
+    calc()
+    const ro = new ResizeObserver(calc)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   const rows = useMemo(() => {
     let r = (kind === 'downtime' ? F.D : F.B) as (Downtime | Defect)[]
@@ -44,6 +63,12 @@ export function DataSheet() {
     return r
   }, [F, kind, q, sort, cols])
 
+  const pages = Math.max(1, Math.ceil(rows.length / pageSize))
+  useEffect(() => { setPage(0) }, [F, kind, q, sort])
+  const cur = Math.min(page, pages - 1)
+  // В PDF нужны все строки (на экране — одна страница)
+  const shown = exporting ? rows : rows.slice(cur * pageSize, cur * pageSize + pageSize)
+
   const j = journals[kind]
   const dtRows = kind === 'downtime' ? (rows as Downtime[]) : []
   const totMin = sum(dtRows, (r) => r.min)
@@ -53,41 +78,57 @@ export function DataSheet() {
   return (
     <SheetFrame id="data">
       <div className="table-tools">
+        <div className="tools-left no-print">
         <Segmented label="Журнал" value={kind} onChange={(v) => { setKind(v); setSort({ key: null, dir: 1 }) }}
           items={[{ id: 'downtime', label: 'Журнал простоев' }, { id: 'defects', label: 'Журнал брака' }]} />
         <input id="dSearch" className="input" type="search" placeholder="Поиск по любому полю…" aria-label="Поиск" value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+        <div className="table-totals" id="dTotals" data-kind={kind} data-rows={rows.length}
+          data-total-min={kind === 'downtime' ? totMin : undefined} data-loss-min={kind === 'downtime' ? totLoss : undefined} data-pieces={kind === 'defects' ? totPcs : undefined}>
+          Записей: <b>{nf(rows.length)}</b> из {nf(j?.records.length ?? 0)}
+          {kind === 'downtime'
+            ? <> · Длительность: <b>{nf(totMin)} мин</b> ({hours(totMin)} ч), внеплановые <b>{nf(totLoss)} мин</b> ({hours(totLoss)} ч)</>
+            : <> · Забраковано: <b>{nf(totPcs)} шт</b></>}
+          {j && <> · {j.fileName}</>}
+        </div>
       </div>
-      <div className="table-totals" id="dTotals" data-kind={kind} data-rows={rows.length}
-        data-total-min={kind === 'downtime' ? totMin : undefined} data-loss-min={kind === 'downtime' ? totLoss : undefined} data-pieces={kind === 'defects' ? totPcs : undefined}>
-        Показано записей: <b>{nf(rows.length)}</b> из {nf(j?.records.length ?? 0)}
-        {kind === 'downtime'
-          ? <> · Длительность: <b>{nf(totMin)} мин</b> ({hours(totMin)} ч), из них внеплановые <b>{nf(totLoss)} мин</b> ({hours(totLoss)} ч)</>
-          : <> · Забраковано: <b>{nf(totPcs)} шт</b></>}
-        {j && <> · Источник: {j.fileName}</>}
-      </div>
-      <div className="table-wrap">
-        <table className="tbl" id="dTable">
-          <thead>
-            <tr>
-              {cols.map((c) => (
-                <th key={c.key} className={c.num ? 'r' : undefined} onClick={() => setSort((s) => (s.key === c.key ? { key: c.key, dir: (s.dir * -1) as 1 | -1 } : { key: c.key, dir: 1 }))}>
-                  {c.title}{sort.key === c.key && <span className="arr">{sort.dir > 0 ? '▲' : '▼'}</span>}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r, i) => (
-              <tr key={i}>
-                {cols.map((c) => {
-                  const v = (r as unknown as Record<string, unknown>)[c.key]
-                  return <td key={c.key} className={[c.num ? 'r' : '', c.mono ? 'mono' : '', c.dim ? 'dim' : ''].join(' ').trim() || undefined}>{c.fmt ? (c.fmt as (x: unknown) => string)(v) : String(v)}</td>
-                })}
+
+      <div className="card fit-card table-card">
+        <div className="table-wrap" ref={wrapRef}>
+          <table className="tbl" id="dTable">
+            <thead>
+              <tr>
+                {cols.map((c) => (
+                  <th key={c.key} className={c.num ? 'r' : undefined} onClick={() => setSort((s) => (s.key === c.key ? { key: c.key, dir: (s.dir * -1) as 1 | -1 } : { key: c.key, dir: 1 }))}>
+                    {c.title}{sort.key === c.key && <span className="arr">{sort.dir > 0 ? '▲' : '▼'}</span>}
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {shown.map((r, i) => (
+                <tr key={i}>
+                  {cols.map((c) => {
+                    const v = (r as unknown as Record<string, unknown>)[c.key]
+                    return <td key={c.key} className={[c.num ? 'r' : '', c.mono ? 'mono' : '', c.dim ? 'dim' : ''].join(' ').trim() || undefined}>{c.fmt ? (c.fmt as (x: unknown) => string)(v) : String(v)}</td>
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      <nav className="pager no-print" aria-label="Страницы таблицы">
+        <span className="pager-info">Строки {rows.length ? cur * pageSize + 1 : 0}–{Math.min(rows.length, cur * pageSize + pageSize)} из {nf(rows.length)}</span>
+        <div className="pager-btns">
+          <Button size="sm" variant="ghost" aria-label="Первая страница" disabled={cur === 0} onClick={() => setPage(0)}><ChevronsLeft size={16} strokeWidth={1.5} /></Button>
+          <Button size="sm" variant="ghost" aria-label="Предыдущая страница" disabled={cur === 0} onClick={() => setPage(cur - 1)}><ChevronLeft size={16} strokeWidth={1.5} /></Button>
+          <span className="pager-page">Страница <b>{cur + 1}</b> из {pages}</span>
+          <Button size="sm" variant="ghost" aria-label="Следующая страница" disabled={cur >= pages - 1} onClick={() => setPage(cur + 1)}><ChevronRight size={16} strokeWidth={1.5} /></Button>
+          <Button size="sm" variant="ghost" aria-label="Последняя страница" disabled={cur >= pages - 1} onClick={() => setPage(pages - 1)}><ChevronsRight size={16} strokeWidth={1.5} /></Button>
+        </div>
+      </nav>
     </SheetFrame>
   )
 }

@@ -1,5 +1,7 @@
 // Графики панели на Bklit UI (столбцы, линии). Цвета — токены VOLT (viz.css), числа — постоянные подписи.
+// Каждый график занимает всю высоту своей карточки (Frame измеряет её), поэтому лист собирается в экран без прокрутки.
 // У каждого графика атрибут data-sum: сумма значений, поданных в график, — по нему независимая сверка сравнивает график с исходными данными.
+import { useLayoutEffect, useRef, useState } from 'react'
 import { curveMonotoneX } from '@visx/curve'
 import { Bar } from '@/components/charts/bar'
 import { BarChart } from '@/components/charts/bar-chart'
@@ -23,11 +25,21 @@ const gapFor = (n: number, height: number, vMargins: number, target: number) => 
   return Math.max(0.12, Math.min(0.72, 1 - target / step))
 }
 
-/** Общая рамка: высота задаётся здесь, aspect-ratio Bklit отключён. */
-function Frame({ name, sum: s, height, children }: { name: string; sum: number; height: number; children: React.ReactNode }) {
+/** Рамка графика: занимает всю доступную высоту карточки и сообщает её содержимому (нужна для толщины столбцов). */
+function Frame({ name, sum: s, height, children }: { name: string; sum: number; height?: number; children: (h: number) => React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [h, setH] = useState(height ?? 260)
+  useLayoutEffect(() => {
+    if (height || !ref.current) return
+    const el = ref.current
+    const ro = new ResizeObserver(() => setH(Math.max(120, Math.round(el.clientHeight))))
+    ro.observe(el)
+    setH(Math.max(120, Math.round(el.clientHeight)))
+    return () => ro.disconnect()
+  }, [height])
   return (
-    <div className="chart-box" style={{ height }} data-chart={name} data-sum={Math.round(s * 1000) / 1000}>
-      {children}
+    <div ref={ref} className={height ? 'chart-box' : 'chart-box chart-fill'} style={height ? { height } : undefined} data-chart={name} data-sum={Math.round(s * 1000) / 1000}>
+      {children(h)}
     </div>
   )
 }
@@ -48,7 +60,7 @@ const gridH = <Grid horizontal vertical={false} strokeDasharray="0" numTicksRows
 // ============ Простои ============
 
 /** Парето причин: столбцы отсортированы, у каждой причины свой (закреплённый) цвет; в подписи — часы и доля, накопительная — в подсказке. */
-export function ParetoChart({ U, height = 280 }: { U: Downtime[]; height?: number }) {
+export function ParetoChart({ U, height }: { U: Downtime[]; height?: number }) {
   const rows = sortedDesc(sumBy(U, (r) => r.reason, (r) => r.min))
   const total = sum(rows, (r) => r[1])
   let cum = 0
@@ -56,23 +68,25 @@ export function ParetoChart({ U, height = 280 }: { U: Downtime[]; height?: numbe
   const data = rows.map(([reason, min]) => ({ name: reason, [reason]: min / 60 }))
   return (
     <Frame name="pareto" sum={total / 60} height={height}>
-      <BarChart data={data} orientation="horizontal" stacked aspectRatio="auto" className="h-full" animationDuration={DUR}
-        margin={{ top: 4, right: 104, bottom: 26, left: 148 }} barGap={gapFor(rows.length, height, 30, 22)}>
-        {grid}
-        {rows.map(([reason]) => <Bar key={reason} dataKey={reason} fill={reasonColor(reason)} lineCap={4} />)}
-        <BarYAxis />
-        <ValueTicks format={(v) => nf(v) + ' ч'} />
-        <BarValueLabels mode="stack" format={({ index }) => nf(rows[index][1] / 60, 1) + ' ч · ' + nf((rows[index][1] / total) * 100) + '%'} />
-        <ChartTooltip showCrosshair={false} showDots={false} rows={(pt) => {
-          const i = rows.findIndex((r) => r[0] === pt.name)
-          if (i < 0) return []
-          return [
-            { color: reasonColor(rows[i][0]), label: 'Потери', value: nf(rows[i][1]) + ' мин (' + nf(rows[i][1] / 60, 1) + ' ч)' },
-            { color: 'var(--text-muted)', label: 'Доля', value: nf((rows[i][1] / total) * 100, 1) + '%' },
-            { color: 'var(--text-muted)', label: 'Накопительно', value: nf(cumShare[i], 1) + '%' },
-          ]
-        }} />
-      </BarChart>
+      {(h) => (
+        <BarChart data={data} orientation="horizontal" stacked aspectRatio="auto" className="h-full" animationDuration={DUR}
+          margin={{ top: 4, right: 116, bottom: 26, left: 156 }} barGap={gapFor(rows.length, h, 30, 26)}>
+          {grid}
+          {rows.map(([reason]) => <Bar key={reason} dataKey={reason} fill={reasonColor(reason)} lineCap={4} />)}
+          <BarYAxis />
+          <ValueTicks format={(v) => nf(v) + ' ч'} />
+          <BarValueLabels mode="stack" format={({ index }) => nf(rows[index][1] / 60, 1) + ' ч · ' + nf((rows[index][1] / total) * 100) + '%'} />
+          <ChartTooltip showCrosshair={false} showDots={false} rows={(pt) => {
+            const i = rows.findIndex((r) => r[0] === pt.name)
+            if (i < 0) return []
+            return [
+              { color: reasonColor(rows[i][0]), label: 'Потери', value: nf(rows[i][1]) + ' мин (' + nf(rows[i][1] / 60, 1) + ' ч)' },
+              { color: 'var(--text-muted)', label: 'Доля', value: nf((rows[i][1] / total) * 100, 1) + '%' },
+              { color: 'var(--text-muted)', label: 'Накопительно', value: nf(cumShare[i], 1) + '%' },
+            ]
+          }} />
+        </BarChart>
+      )}
     </Frame>
   )
 }
@@ -89,22 +103,23 @@ export function MachinesByReasonChart({ U, height }: { U: Downtime[]; height?: n
     reasons.forEach((re) => { row[re] = (grid2.get(m + '|' + re) ?? 0) / 60 })
     return row
   })
-  const h = height ?? Math.max(220, 84 + machines.length * 46)
   return (
     <>
       <Legend items={reasons.map((r) => ({ label: r, color: reasonColor(r) }))} />
-      <Frame name="machines-reason" sum={sum(U, (r) => r.min) / 60} height={h}>
-        <BarChart data={data} orientation="horizontal" stacked stackGap={2} aspectRatio="auto" className="h-full" animationDuration={DUR}
-          margin={{ top: 4, right: 72, bottom: 26, left: 108 }} barGap={gapFor(machines.length, h, 30, 24)}>
-          {grid}
-          {reasons.map((re) => <Bar key={re} dataKey={re} fill={reasonColor(re)} lineCap={3} stackGap={2} />)}
-          <BarYAxis />
-          <ValueTicks format={(v) => nf(v) + ' ч'} />
-          <BarValueLabels mode="stack" stackGap={2} format={({ total }) => nf(total, 1) + ' ч'} />
-          <ChartTooltip showCrosshair={false} showDots={false} rows={(pt) =>
-            reasons.filter((re) => typeof pt[re] === 'number' && (pt[re] as number) > 0)
-              .map((re) => ({ color: reasonColor(re), label: re, value: nf((pt[re] as number) * 60) + ' мин' }))} />
-        </BarChart>
+      <Frame name="machines-reason" sum={sum(U, (r) => r.min) / 60} height={height}>
+        {(h) => (
+          <BarChart data={data} orientation="horizontal" stacked stackGap={2} aspectRatio="auto" className="h-full" animationDuration={DUR}
+            margin={{ top: 4, right: 76, bottom: 26, left: 120 }} barGap={gapFor(machines.length, h, 30, 30)}>
+            {grid}
+            {reasons.map((re) => <Bar key={re} dataKey={re} fill={reasonColor(re)} lineCap={3} stackGap={2} />)}
+            <BarYAxis />
+            <ValueTicks format={(v) => nf(v) + ' ч'} />
+            <BarValueLabels mode="stack" stackGap={2} format={({ total }) => nf(total, 1) + ' ч'} />
+            <ChartTooltip showCrosshair={false} showDots={false} rows={(pt) =>
+              reasons.filter((re) => typeof pt[re] === 'number' && (pt[re] as number) > 0)
+                .map((re) => ({ color: reasonColor(re), label: re, value: nf((pt[re] as number) * 60) + ' мин' }))} />
+          </BarChart>
+        )}
       </Frame>
     </>
   )
@@ -112,7 +127,7 @@ export function MachinesByReasonChart({ U, height }: { U: Downtime[]; height?: n
 
 /** Группы «день / ночь» по станкам (ч) или по операциям (шт) — один компонент на оба случая. */
 function ShiftGroups({ name, cats, values, shifts, unit, dec, height }: {
-  name: string; cats: string[]; values: Map<string, number>; shifts: (1 | 2)[]; unit: string; dec: number; height: number
+  name: string; cats: string[]; values: Map<string, number>; shifts: (1 | 2)[]; unit: string; dec: number; height?: number
 }) {
   const data = cats.map((c) => {
     const row: Record<string, unknown> = { name: c }
@@ -125,16 +140,18 @@ function ShiftGroups({ name, cats, values, shifts, unit, dec, height }: {
     <>
       <Legend items={shifts.map((s) => ({ label: SHIFT_NAME[s], color: shiftColor(s) }))} />
       <Frame name={name} sum={total} height={height}>
-        <BarChart data={data} orientation="horizontal" aspectRatio="auto" className="h-full" animationDuration={DUR}
-          margin={{ top: 4, right: 72, bottom: 26, left: 72 }} barGap={gapFor(cats.length, height, 30, shifts.length * 16 + (shifts.length - 1) * 4)}>
-          {grid}
-          {shifts.map((s) => <Bar key={s} dataKey={'s' + s} fill={shiftColor(s)} lineCap={3} />)}
-          <BarYAxis />
-          <ValueTicks format={(v) => nf(v) + (unit === 'ч' ? ' ч' : '')} />
-          <BarValueLabels mode="each" format={({ value }) => nf(value, dec) + (unit === 'ч' ? ' ч' : '')} />
-          <ChartTooltip showCrosshair={false} showDots={false} rows={(pt) =>
-            shifts.map((s) => ({ color: shiftColor(s), label: SHIFT_NAME[s], value: nf(pt['s' + s] as number, dec) + ' ' + unit }))} />
-        </BarChart>
+        {(h) => (
+          <BarChart data={data} orientation="horizontal" aspectRatio="auto" className="h-full" animationDuration={DUR}
+            margin={{ top: 4, right: 76, bottom: 26, left: 84 }} barGap={gapFor(cats.length, h, 30, shifts.length * 18 + (shifts.length - 1) * 4)}>
+            {grid}
+            {shifts.map((s) => <Bar key={s} dataKey={'s' + s} fill={shiftColor(s)} lineCap={3} />)}
+            <BarYAxis />
+            <ValueTicks format={(v) => nf(v) + (unit === 'ч' ? ' ч' : '')} />
+            <BarValueLabels mode="each" format={({ value }) => nf(value, dec) + (unit === 'ч' ? ' ч' : '')} />
+            <ChartTooltip showCrosshair={false} showDots={false} rows={(pt) =>
+              shifts.map((s) => ({ color: shiftColor(s), label: SHIFT_NAME[s], value: nf(pt['s' + s] as number, dec) + ' ' + unit }))} />
+          </BarChart>
+        )}
       </Frame>
     </>
   )
@@ -144,7 +161,7 @@ export function MachinesByShiftChart({ U, shifts, height }: { U: Downtime[]; shi
   const machines = sortedDesc(sumBy(U, (r) => r.machine, (r) => r.min)).map((x) => x[0])
   const v = new Map<string, number>()
   sumBy(U, (r) => r.machine + '|' + r.shift, (r) => r.min).forEach((min, k) => v.set(k, min / 60))
-  return <ShiftGroups name="machines-shift" cats={machines} values={v} shifts={shifts} unit="ч" dec={1} height={height ?? Math.max(220, 84 + machines.length * 58)} />
+  return <ShiftGroups name="machines-shift" cats={machines} values={v} shifts={shifts} unit="ч" dec={1} height={height} />
 }
 
 // ============ Брак ============
@@ -152,11 +169,11 @@ export function MachinesByShiftChart({ U, shifts, height }: { U: Downtime[]; shi
 export function OpsByShiftChart({ B, shifts, height }: { B: Defect[]; shifts: (1 | 2)[]; height?: number }) {
   const ops = sortedDesc(sumBy(B, (r) => r.op, (r) => r.qty)).map((x) => x[0])
   const v = sumBy(B, (r) => r.op + '|' + r.shift, (r) => r.qty)
-  return <ShiftGroups name="ops-shift" cats={ops} values={v} shifts={shifts} unit="шт" dec={0} height={height ?? Math.max(220, 84 + ops.length * 58)} />
+  return <ShiftGroups name="ops-shift" cats={ops} values={v} shifts={shifts} unit="шт" dec={0} height={height} />
 }
 
 /** Динамика брака по дням: столбцы-стопки «день + ночь». */
-export function DailyDefectsChart({ B, days, shifts, height = 300 }: { B: Defect[]; days: string[]; shifts: (1 | 2)[]; height?: number }) {
+export function DailyDefectsChart({ B, days, shifts, height }: { B: Defect[]; days: string[]; shifts: (1 | 2)[]; height?: number }) {
   const m = sumBy(B, (r) => r.date + '|' + r.shift, (r) => r.qty)
   const data = days.map((d) => {
     const row: Record<string, unknown> = { name: d.slice(8) + '.' + d.slice(5, 7), full: d }
@@ -168,22 +185,24 @@ export function DailyDefectsChart({ B, days, shifts, height = 300 }: { B: Defect
     <>
       <Legend items={shifts.map((s) => ({ label: SHIFT_NAME[s], color: shiftColor(s) }))} />
       <Frame name="daily-defects" sum={total} height={height}>
-        <BarChart data={data} stacked stackGap={2} aspectRatio="auto" className="h-full" animationDuration={DUR}
-          margin={{ top: 8, right: 8, bottom: 30, left: 34 }} barGap={0.28}>
-          {gridH}
-          {shifts.map((s) => <Bar key={s} dataKey={'s' + s} fill={shiftColor(s)} lineCap={3} stackGap={2} />)}
-          <BarXAxis maxLabels={7} />
-          <ValueTicks format={(v) => nf(v)} />
-          <ChartTooltip showCrosshair={false} showDots={false} rows={(pt) =>
-            shifts.map((s) => ({ color: shiftColor(s), label: SHIFT_NAME[s], value: nf(pt['s' + s] as number) + ' шт' }))} />
-        </BarChart>
+        {() => (
+          <BarChart data={data} stacked stackGap={2} aspectRatio="auto" className="h-full" animationDuration={DUR}
+            margin={{ top: 8, right: 8, bottom: 30, left: 36 }} barGap={0.28}>
+            {gridH}
+            {shifts.map((s) => <Bar key={s} dataKey={'s' + s} fill={shiftColor(s)} lineCap={3} stackGap={2} />)}
+            <BarXAxis maxLabels={7} />
+            <ValueTicks format={(v) => nf(v)} />
+            <ChartTooltip showCrosshair={false} showDots={false} rows={(pt) =>
+              shifts.map((s) => ({ color: shiftColor(s), label: SHIFT_NAME[s], value: nf(pt['s' + s] as number) + ' шт' }))} />
+          </BarChart>
+        )}
       </Frame>
     </>
   )
 }
 
 /** Типы дефектов: доля от всего брака в подписи, операция-источник — в подсказке. */
-export function DefectTypesChart({ B, height = 240 }: { B: Defect[]; height?: number }) {
+export function DefectTypesChart({ B, height }: { B: Defect[]; height?: number }) {
   const opOf: Record<string, string> = {}
   B.forEach((r) => { opOf[r.type] = r.op })
   const rows = sortedDesc(sumBy(B, (r) => r.type, (r) => r.qty))
@@ -191,18 +210,20 @@ export function DefectTypesChart({ B, height = 240 }: { B: Defect[]; height?: nu
   const data = rows.map(([t, q]) => ({ name: t, qty: q }))
   return (
     <Frame name="defect-types" sum={total} height={height}>
-      <BarChart data={data} orientation="horizontal" aspectRatio="auto" className="h-full" animationDuration={DUR}
-        margin={{ top: 4, right: 96, bottom: 26, left: 148 }} barGap={gapFor(rows.length, height, 30, 22)}>
-        {grid}
-        <Bar dataKey="qty" fill="var(--accent)" lineCap={4} />
-        <BarYAxis />
-        <ValueTicks format={(v) => nf(v)} />
-        <BarValueLabels mode="each" format={({ value }) => nf(value) + ' шт · ' + nf((value / total) * 100) + '%'} />
-        <ChartTooltip showCrosshair={false} showDots={false} rows={(pt) => [
-          { color: 'var(--accent)', label: 'Брак', value: nf(pt.qty as number) + ' шт' },
-          { color: 'var(--text-muted)', label: 'Операция', value: opOf[pt.name as string] ?? '' },
-        ]} />
-      </BarChart>
+      {(h) => (
+        <BarChart data={data} orientation="horizontal" aspectRatio="auto" className="h-full" animationDuration={DUR}
+          margin={{ top: 4, right: 100, bottom: 26, left: 148 }} barGap={gapFor(rows.length, h, 30, 26)}>
+          {grid}
+          <Bar dataKey="qty" fill="var(--accent)" lineCap={4} />
+          <BarYAxis />
+          <ValueTicks format={(v) => nf(v)} />
+          <BarValueLabels mode="each" format={({ value }) => nf(value) + ' шт · ' + nf((value / total) * 100) + '%'} />
+          <ChartTooltip showCrosshair={false} showDots={false} rows={(pt) => [
+            { color: 'var(--accent)', label: 'Брак', value: nf(pt.qty as number) + ' шт' },
+            { color: 'var(--text-muted)', label: 'Операция', value: opOf[pt.name as string] ?? '' },
+          ]} />
+        </BarChart>
+      )}
     </Frame>
   )
 }
@@ -212,7 +233,7 @@ export function DefectTypesChart({ B, height = 240 }: { B: Defect[]; height?: nu
 export interface LineSeries { label: string; color: string; data: number[] }
 
 /** Недели по оси X, день и ночь линиями. Общий максимум передаётся снаружи, чтобы шкалы соседних графиков совпадали. */
-export function WeeklyLines({ name, wins, series, ymax, height = 190, unit = 'шт', decimals = 0 }: {
+export function WeeklyLines({ name, wins, series, ymax, height, decimals = 0, unit = 'шт' }: {
   name: string; wins: Win[]; series: LineSeries[]; ymax?: number; height?: number; unit?: string; decimals?: number
 }) {
   const data = wins.map((w, i) => {
@@ -226,25 +247,27 @@ export function WeeklyLines({ name, wins, series, ymax, height = 190, unit = 'ш
   const pad: [Date, Date] = [new Date(+(data[0].date as Date) - 3 * day), new Date(+(data[data.length - 1].date as Date) + 3 * day)]
   return (
     <Frame name={name} sum={total} height={height}>
-      <LineChart data={data} xDataKey="date" aspectRatio="auto" className="h-full" animationDuration={DUR} xDomain={pad}
-        margin={{ top: 12, right: 34, bottom: 26, left: 32 }}>
-        {gridH}
-        {ymax != null && <Line dataKey="cap" stroke="transparent" strokeWidth={0} showHighlight={false} fadeEdges={false} />}
-        {series.map((s, i) => (
-          <Line key={s.label} dataKey={'v' + i} stroke={s.color} strokeWidth={2} curve={curveMonotoneX} fadeEdges={false} showMarkers
-            markers={{ radius: 4, fill: s.color, stroke: 'var(--bg-surface)', strokeWidth: 2 } as never} />
-        ))}
-        <DateTicks format={(row) => String(row.label)} />
-        <SeriesEndLabels keys={series.map((s, i) => ({ key: 'v' + i, color: s.color }))} format={(v) => nf(v, decimals)} />
-        <ValueTicks format={(v) => nf(v, decimals)} />
-        <ChartTooltip showDatePill={false} rows={(pt) => series.map((s, i) => ({ color: s.color, label: s.label, value: nf(pt['v' + i] as number, decimals) + ' ' + unit }))} />
-      </LineChart>
+      {() => (
+        <LineChart data={data} xDataKey="date" aspectRatio="auto" className="h-full" animationDuration={DUR} xDomain={pad}
+          margin={{ top: 12, right: 36, bottom: 28, left: 34 }}>
+          {gridH}
+          {ymax != null && <Line dataKey="cap" stroke="transparent" strokeWidth={0} showHighlight={false} fadeEdges={false} />}
+          {series.map((s, i) => (
+            <Line key={s.label} dataKey={'v' + i} stroke={s.color} strokeWidth={2.5} curve={curveMonotoneX} fadeEdges={false} showMarkers
+              markers={{ radius: 4.5, fill: s.color, stroke: 'var(--bg-surface)', strokeWidth: 2 } as never} />
+          ))}
+          <DateTicks format={(row) => String(row.label)} />
+          <SeriesEndLabels keys={series.map((s, i) => ({ key: 'v' + i, color: s.color }))} format={(v) => nf(v, decimals)} />
+          <ValueTicks format={(v) => nf(v, decimals)} />
+          <ChartTooltip showDatePill={false} rows={(pt) => series.map((s, i) => ({ color: s.color, label: s.label, value: nf(pt['v' + i] as number, decimals) + ' ' + unit }))} />
+        </LineChart>
+      )}
     </Frame>
   )
 }
 
-/** Мини-график в карточке вывода: столбцы-стопки по дням. */
-export function MiniColumns({ name, labels, titles, series, height = 150 }: {
+/** Мини-график в детали вывода: столбцы-стопки по дням. */
+export function MiniColumns({ name, labels, titles, series, height }: {
   name: string; labels: string[]; titles: string[]; series: LineSeries[]; height?: number
 }) {
   const data = labels.map((l, i) => {
@@ -256,15 +279,17 @@ export function MiniColumns({ name, labels, titles, series, height = 150 }: {
     <>
       <Legend items={series.map((s) => ({ label: s.label, color: s.color }))} />
       <Frame name={name} sum={sum(series, (s) => sum(s.data, (v) => v))} height={height}>
-        <BarChart data={data} stacked stackGap={2} aspectRatio="auto" className="h-full" animationDuration={DUR}
-          margin={{ top: 6, right: 6, bottom: 24, left: 28 }} barGap={0.3}>
-          {gridH}
-          {series.map((s, i) => <Bar key={s.label} dataKey={'v' + i} fill={s.color} lineCap={3} stackGap={2} />)}
-          <BarXAxis maxLabels={7} />
-          <ValueTicks count={3} format={(v) => nf(v, 1)} />
-          <ChartTooltip showCrosshair={false} showDots={false} rows={(pt) =>
-            series.map((s, i) => ({ color: s.color, label: s.label, value: hours((pt['v' + i] as number) * 60) + ' ч' }))} />
-        </BarChart>
+        {() => (
+          <BarChart data={data} stacked stackGap={2} aspectRatio="auto" className="h-full" animationDuration={DUR}
+            margin={{ top: 6, right: 6, bottom: 26, left: 34 }} barGap={0.3}>
+            {gridH}
+            {series.map((s, i) => <Bar key={s.label} dataKey={'v' + i} fill={s.color} lineCap={3} stackGap={2} />)}
+            <BarXAxis maxLabels={7} />
+            <ValueTicks count={3} format={(v) => nf(v, 1)} />
+            <ChartTooltip showCrosshair={false} showDots={false} rows={(pt) =>
+              series.map((s, i) => ({ color: s.color, label: s.label, value: hours((pt['v' + i] as number) * 60) + ' ч' }))} />
+          </BarChart>
+        )}
       </Frame>
     </>
   )

@@ -52,12 +52,12 @@ export function Sidebar() {
 }
 
 export function Topbar() {
-  const { sheet, upload, isDefault, resetDefaults } = useStore()
+  const { upload, isDefault, resetDefaults } = useStore()
   const { theme, toggle } = useTheme()
   const input = useRef<HTMLInputElement>(null)
   return (
     <header className="topbar">
-      <div className="crumbs eyebrow">Производство / <b>{SHEET_TITLE[sheet]}</b></div>
+      <FilterBar />
       <div className="topbar-actions">
         {!isDefault && (
           <Button variant="ghost" onClick={resetDefaults} id="resetBtn"><RotateCcw {...ICON} />Вернуть исходные данные</Button>
@@ -80,30 +80,30 @@ export function FilterBar() {
   const { filters, setFilters, bounds, presets, shops } = useStore()
   const cur = presets.findIndex((p) => p.from === filters.from && p.to === filters.to)
   return (
-    <section className="filterbar" aria-label="Фильтры">
+    <section className="tb-filters" aria-label="Фильтры">
       <div className="filter">
-        <span className="eyebrow">Период</span>
+        <span className="filter-label">Период</span>
         <div className="filter-row">
           <input id="fFrom" className="input" type="date" aria-label="Период с" value={filters.from} min={bounds?.min} max={bounds?.max}
             onChange={(e) => e.target.value && setFilters({ from: e.target.value })} />
           <span className="filter-sep">—</span>
           <input id="fTo" className="input" type="date" aria-label="Период по" value={filters.to} min={bounds?.min} max={bounds?.max}
             onChange={(e) => e.target.value && setFilters({ to: e.target.value })} />
-          <Segmented size="sm" label="Быстрый период" value={cur >= 0 ? String(cur) : ''}
+          <Segmented size="sm" label="Быстрый период" value={cur >= 0 ? String(cur) : ""}
             items={presets.map((p, i) => ({ id: String(i), label: p.label, title: p.title }))}
             onChange={(v) => { const p = presets[+v]; setFilters({ from: p.from, to: p.to }) }} />
         </div>
       </div>
       <div className="filter" id="fShift">
-        <span className="eyebrow">Смена</span>
+        <span className="filter-label">Смена</span>
         <Segmented size="sm" label="Смена" value={String(filters.shift)}
-          items={[{ id: 'all', label: 'Обе' }, { id: '1', label: 'День' }, { id: '2', label: 'Ночь' }]}
-          onChange={(v) => setFilters({ shift: v === 'all' ? 'all' : (Number(v) as 1 | 2) })} />
+          items={[{ id: "all", label: "Обе" }, { id: "1", label: "День" }, { id: "2", label: "Ночь" }]}
+          onChange={(v) => setFilters({ shift: v === "all" ? "all" : (Number(v) as 1 | 2) })} />
       </div>
       <div className="filter" id="fShop">
-        <span className="eyebrow">Цех <span className="help" title="В журнале брака нет цеха, поэтому фильтр по цеху влияет только на простои">(только простои)</span></span>
+        <span className="filter-label help" title="В журнале брака нет цеха, поэтому фильтр по цеху влияет только на простои">Цех*</span>
         <Segmented size="sm" label="Цех" value={filters.shop}
-          items={[{ id: 'all', label: 'Все' }, ...shops.map((s) => ({ id: s, label: s }))]}
+          items={[{ id: "all", label: "Все" }, ...shops.map((s) => ({ id: s, label: s }))]}
           onChange={(v) => setFilters({ shop: v })} />
       </div>
     </section>
@@ -118,7 +118,7 @@ export function LoadReport() {
       {report && (
         <motion.div
           key="report" id="loadReport" className={'notice notice--' + report.tone} role="status"
-          initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.22, ease: EASE_OUT }}
+          initial={{ opacity: 0, transform: 'translateY(-6px)' }} animate={{ opacity: 1, transform: 'translateY(0px)' }} exit={{ opacity: 0, transform: 'translateY(-4px)', transition: { duration: 0.12 } }} transition={{ duration: 0.22, ease: EASE_OUT }}
         >
           <i className="led" />
           <div className="notice-body">

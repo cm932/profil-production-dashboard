@@ -49,7 +49,7 @@ export function BarValueLabels({ mode, format, groupGap = 4, stackGap = 0 }: {
           x={it.x}
           y={it.y}
           dominantBaseline="central"
-          style={{ fill: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: 11.5, fontVariantNumeric: 'tabular-nums' }}
+          style={{ fill: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: 12.5, fontVariantNumeric: 'tabular-nums' }}
         >
           {it.text}
         </text>
@@ -75,7 +75,7 @@ export function ValueTicks({ count = 4, format }: { count?: number; format: (v: 
             y={horizontal ? innerHeight + 18 : pos}
             textAnchor={horizontal ? 'middle' : 'end'}
             dominantBaseline={horizontal ? 'auto' : 'central'}
-            style={{ fill: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 10.5, fontVariantNumeric: 'tabular-nums' }}
+            style={{ fill: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}
           >
             {format(t)}
           </text>
@@ -98,7 +98,7 @@ export function DateTicks({ format }: { format: (row: Record<string, unknown>) =
           x={xScale(xAccessor(row)) ?? 0}
           y={innerHeight + 18}
           textAnchor="middle"
-          style={{ fill: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 10.5 }}
+          style={{ fill: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 12 }}
         >
           {format(row)}
         </text>
@@ -124,7 +124,7 @@ export function SeriesEndLabels({ keys, format }: { keys: { key: string; color: 
             x={(xScale(xAccessor(last)) ?? 0) + 9}
             y={yScale(v) ?? 0}
             dominantBaseline="central"
-            style={{ fill: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontSize: 11.5, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}
+            style={{ fill: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontSize: 12.5, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}
           >
             {format(v)}
           </text>

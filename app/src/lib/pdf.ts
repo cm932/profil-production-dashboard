@@ -15,10 +15,12 @@ export async function withExportMode<T>(fn: () => Promise<T>): Promise<T> {
   // Допущения (ставки, длительность смены) в PDF раскрываем: от них зависят рубли и доступность
   const details = [...document.querySelectorAll('details')].map((d) => [d, d.open] as const)
   details.forEach(([d]) => { d.open = true })
+  window.dispatchEvent(new CustomEvent('profil:exporting', { detail: true }))
   try {
-    await sleep(450) // тема применена, шрифты и графики перерисованы
+    await sleep(600) // тема применена, лист «Данные» показал все строки, графики перерисованы
     return await fn()
   } finally {
+    window.dispatchEvent(new CustomEvent('profil:exporting', { detail: false }))
     details.forEach(([d, o]) => { d.open = o })
     document.body.classList.remove('exporting')
     if (prevTheme) root.setAttribute('data-theme', prevTheme)

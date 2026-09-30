@@ -36,6 +36,8 @@ export interface Mini {
 export interface Insight {
   level: 'crit' | 'warn' | 'info'
   title: string
+  /** Одна строка с главной цифрой — для списка выводов; подробности — в body */
+  headline: string
   body: Seg[]
   action: string
   mini?: Mini
@@ -95,10 +97,10 @@ function machineSpike({ F, f }: InsightCtx): Insight | null {
       const upRecent = sum(upRows.filter((r) => r.date >= recentFrom), (r) => r.min)
       const upAvg = sum(upRows.filter((r) => r.date < recentFrom), (r) => r.min) / priorWeeks
       body.push(
-        ' Станки предыдущего передела (' + upOp + ') за эти же 7 дней простояли всего ', b(nf(upRecent) + ' мин'),
-        ' (обычно ' + nf(upAvg) + ' мин в неделю): ' +
+        ' Передел «' + upOp + '» за эти же 7 дней простоял всего ', b(nf(upRecent) + ' мин'),
+        ' (обычно ' + nf(upAvg) + '): ' +
           (upRecent <= upAvg * 1.2
-            ? 'то есть раскрой работал в обычном режиме (даже с меньшими простоями), а заготовок на кромку всё равно не хватало — проблема, вероятно, в очерёдности и подаче, а не в поломках раскроя. Журнал этого не доказывает, проверьте на месте.'
+            ? 'он работал в обычном режиме, а заготовок всё равно не хватало. Вероятно, дело в очерёдности и подаче, а не в поломках; журнал этого не доказывает — проверьте на месте.'
             : 'возможно, причина в них — проверьте, не они задерживают подачу.'),
       )
     }
@@ -113,6 +115,7 @@ function machineSpike({ F, f }: InsightCtx): Insight | null {
   return {
     level: 'crit',
     title: 'Резкий рост простоев станка ' + best.m,
+    headline: hours(best.rec) + ' ч за неделю — в ' + nf(best.rec / Math.max(best.avg, 1), 1) + ' раза больше обычного; главная причина «' + topReason + '»',
     body,
     action: action(topReason),
     mini: {
@@ -156,10 +159,10 @@ function defectSpike({ F, f, p }: InsightCtx): Insight | null {
   const [topType, topQty] = [...byType].sort((a, c) => c[1] - a[1])[0]
 
   const body: Seg[] = [
-    b(best.op + ', ' + (best.shift === 1 ? 'день' : 'ночь')), ': за последнюю неделю (' + w.title + ') ', b(best.rec + ' шт'),
-    ' брака — в ' + nf(best.rec / Math.max(best.prev, 1), 1) + ' раза больше среднего за прошлые недели (' + nf(best.prev, 1) + ' шт). ' +
-      'В другую смену на этой операции за ту же неделю — ' + otherCounts[last] + ' шт, то есть проблема именно ' + (best.shift === 1 ? 'в дневной' : 'в ночной') + ' смене. ' +
-      'Основной дефект: «' + topType + '» (' + topQty + ' из ' + best.rec + ' шт).',
+    b(best.op + ', ' + (best.shift === 1 ? 'день' : 'ночь')), ': за неделю ' + w.title + ' — ', b(best.rec + ' шт'),
+    ' брака, в ' + nf(best.rec / Math.max(best.prev, 1), 1) + ' раза больше среднего (' + nf(best.prev, 1) + ' шт). ' +
+      (best.shift === 1 ? 'Ночью' : 'Днём') + ' на этой операции за ту же неделю — ' + otherCounts[last] + ' шт: проблема именно ' + (best.shift === 1 ? 'в дневной' : 'в ночной') + ' смене. ' +
+      'Основной дефект — «' + topType + '» (' + topQty + ' из ' + best.rec + ').',
   ]
 
   // Что совпало по времени: причина простоя на станках этой операции в ту же смену и неделю
@@ -175,14 +178,15 @@ function defectSpike({ F, f, p }: InsightCtx): Insight | null {
     const x = reasons[0]
     body.push(
       ' В ту же неделю на станках этой операции ' + shiftWord2 + ' — ', b(nf(x.rec) + ' мин простоя по причине «' + x.re + '»'),
-      ' (раньше в среднем ' + nf(x.avg) + ' мин в неделю). Совпадение по времени — не доказанная причина, но это первое, что стоит проверить.',
+      ' (раньше ≈ ' + nf(x.avg) + ' мин в неделю). Это совпадение по времени, а не доказанная причина, но проверить стоит в первую очередь.',
     )
   }
   const extra = best.rec - best.prev
-  body.push(' Лишний брак за неделю ≈ ' + nf(extra) + ' шт (≈ ' + nf((extra * p.pieceCost) / 1000) + ' тыс. ₽ по заданной ставке).')
+  body.push(' Лишний брак ≈ ' + nf(extra) + ' шт (≈ ' + nf((extra * p.pieceCost) / 1000) + ' тыс. ₽).')
 
   return {
     level: 'crit',
+    headline: best.rec + ' шт за неделю — в ' + nf(best.rec / Math.max(best.prev, 1), 1) + ' раза больше среднего; основной дефект «' + topType + '»',
     title: 'Рост брака: ' + best.op.toLowerCase() + ', ' + (best.shift === 1 ? 'дневная' : 'ночная') + ' смена',
     body,
     action:
@@ -218,6 +222,7 @@ function shiftGap({ F }: InsightCtx): Insight | null {
   return {
     level: 'warn',
     title: name(lead) + ' смена теряет больше времени',
+    headline: hours(t[lead]) + ' ч против ' + hours(t[oth]) + ' ч — на ' + nf((t[lead] / t[oth] - 1) * 100) + '% больше; больше всего разницы даёт «' + re + '»',
     body: [
       name(lead) + ' смена: ', b(hours(t[lead]) + ' ч'), ' внеплановых простоев против ' + hours(t[oth]) + ' ч в ' + (oth === 1 ? 'дневную' : 'ночную') +
         ' (на ' + nf((t[lead] / t[oth] - 1) * 100) + '% больше). Больше всего разницы даёт «' + re + '»: +' + hours(dv) + ' ч к другой смене.',
@@ -253,6 +258,7 @@ function overview({ F, p, s }: InsightCtx): Insight | null {
   return {
     level: 'info',
     title: 'Общая картина потерь',
+    headline: hours(loss) + ' ч потерь; крупнейшая причина «' + reasons[0][0] + '» — ' + nf(topShare) + '%, поэтому одним решением не закрыть',
     body,
     action: other / loss > 0.15 ? ACTION['Прочее'] : 'начать со станка-лидера по потерям и его главной причины (см. лист «Простои»).',
   }
