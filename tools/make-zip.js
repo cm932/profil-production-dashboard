@@ -12,13 +12,22 @@ import { fileURLToPath } from 'node:url'
 import os from 'node:os'
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
-const OUT = path.resolve(process.argv[2] ?? path.join(os.homedir(), 'Desktop', 'Профиль_панель_v5.zip'))
+const args = process.argv.slice(2)
+const SLIM_MODE = args.includes('--slim') // архив для отправки: только то, что нужно для запуска и просмотра
+const OUT = path.resolve(args.find((a) => !a.startsWith('--')) ?? path.join(os.homedir(), 'Desktop', 'Профиль_панель_v5.zip'))
 const PREFIX = 'Профиль_панель/'
 const LIMIT_MB = 99 // предел отправки — 100 МБ
 
 const tracked = execFileSync('git', ['-c', 'core.quotepath=false', 'ls-files'], { cwd: ROOT, encoding: 'utf8' }).split(/\r?\n/).filter(Boolean)
 const extra = ['runtime/node.exe', ...(fs.existsSync(path.join(ROOT, 'runtime/mac')) ? fs.readdirSync(path.join(ROOT, 'runtime/mac')).map((f) => 'runtime/mac/' + f) : [])]
-const files = [...new Set([...tracked, ...extra])].filter((f) => fs.existsSync(path.join(ROOT, f)) && fs.statSync(path.join(ROOT, f)).isFile())
+const all = [...new Set([...tracked, ...extra])].filter((f) => fs.existsSync(path.join(ROOT, f)) && fs.statSync(path.join(ROOT, f)).isFile())
+
+// Состав облегчённого архива (--slim): без исходников панели, тестов и служебных документов — они остаются в репозитории на GitHub
+const SLIM = [/^НАЧНИТЕ ОТСЮДА\.txt$/, /^ЗАПУСК\.(cmd|command)$/, /^ОПИСАНИЕ\.md$/, /^КОММЕНТАРИЙ\.md$/, /^server\//, /^runtime\//, /^Файлы для проекта\//]
+const RENAME = { 'panel/index.html': 'ОТКРЫТЬ БЕЗ СЕРВЕРА.html' } // зашифрованная панель — в корне, под понятным именем
+const entries = (SLIM_MODE ? [...all.filter((f) => SLIM.some((re) => re.test(f))), ...Object.keys(RENAME)] : all)
+  .map((f) => ({ src: f, dest: SLIM_MODE ? (RENAME[f] ?? f) : f }))
+const files = entries.map((e) => e.src)
 
 const EXEC = /\.(command|sh)$/i
 const ALREADY_COMPRESSED = /\.(xz|gz|zip|woff2|png|jpg)$/i
@@ -31,9 +40,9 @@ const central = []
 let offset = 0
 const push = (b) => { chunks.push(b); offset += b.length }
 
-for (const f of files) {
+for (const { src: f, dest } of entries) {
   const data = fs.readFileSync(path.join(ROOT, f))
-  const name = Buffer.from(PREFIX + f.replace(/\\/g, '/'), 'utf8')
+  const name = Buffer.from(PREFIX + dest.replace(/\\/g, '/'), 'utf8')
   const stored = ALREADY_COMPRESSED.test(f) || data.length < 64
   const body = stored ? data : zlib.deflateRawSync(data, { level: 9 })
   const method = stored ? 0 : 8

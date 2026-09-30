@@ -1,0 +1,5 @@
+{
+  "name": "profil-server",
+  "private": true,
+  "type": "module"
+}
