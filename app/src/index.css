@@ -1,0 +1,44 @@
+@import "tailwindcss";
+@import "./styles/fonts.css";
+/* VOLT: токены и базовый слой — в слой base, компонентные классы — в слой components,
+   чтобы утилиты Tailwind (нужны Bklit UI) могли их переопределять, а не наоборот */
+@import "./styles/volt/base.css" layer(base);
+@import "./styles/volt/components.css" layer(components);
+@import "./styles/viz.css" layer(base);
+@import "./styles/app.css" layer(components);
+
+@custom-variant dark (&:is([data-theme="dark"] *));
+
+/* Цвета, которые Bklit UI берёт через классы Tailwind → токены VOLT */
+@theme inline {
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-background: var(--chart-background);
+  --color-chart-foreground: var(--chart-foreground);
+  --color-chart-foreground-muted: var(--chart-foreground-muted);
+  --color-chart-crosshair: var(--chart-crosshair);
+  --color-chart-grid: var(--chart-grid);
+  --color-chart-tooltip-background: var(--chart-tooltip-background);
+  --color-chart-tooltip-foreground: var(--chart-tooltip-foreground);
+  --color-chart-tooltip-muted: var(--chart-tooltip-muted);
+  --color-chart-marker-background: var(--chart-marker-background);
+  --color-chart-marker-border: var(--chart-marker-border);
+  --color-chart-marker-foreground: var(--chart-marker-foreground);
+  --color-chart-label: var(--chart-label);
+  --color-foreground: var(--text-primary);
+  --color-muted: var(--bg-inset);
+  --color-secondary: var(--text-secondary);
+  --font-display: "Unbounded", "Golos Text", system-ui, sans-serif;
+  --font-sans: "Golos Text", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+:root {
+  /* shadcn-имена, которые используют компоненты Bklit внутри var(...) */
+  --foreground: var(--text-primary);
+  --muted-foreground: var(--text-muted);
+  --border: var(--border-subtle);
+}

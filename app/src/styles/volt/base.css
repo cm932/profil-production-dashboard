@@ -1,0 +1,16 @@
+/* VOLT — базовый слой. Подключается после tokens.css */
+@import './tokens.css';
+
+*,*::before,*::after{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg-canvas); color:var(--text-primary);
+  font-family:var(--font-ui); font-size:var(--text-base); line-height:var(--lh-normal);
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{margin:0; text-wrap:balance; letter-spacing:var(--track-tight); line-height:var(--lh-tight)}
+p{margin:0}
+a{color:inherit}
+button,input,select,textarea{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--focus-ring); outline-offset:2px; border-radius:var(--r-xs)}
+::selection{background:var(--accent); color:var(--on-accent)}
+.num{font-variant-numeric:tabular-nums}

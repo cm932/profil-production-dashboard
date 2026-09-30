@@ -1,0 +1,42 @@
+/* Роль «данные на графиках» — расширение VOLT. Новая роль (а не новый оттенок «под задачу»):
+   категориальная палитра для графиков, отдельная от статусов и от акцента.
+   Палитра проверена валидатором на поверхностях VOLT (dark #101210, light #FFFFFF): все проверки пройдены;
+   в светлой теме три цвета слабее 3:1 — компенсируется подписями значений и легендой. */
+:root{
+  --viz-1:#3987e5; --viz-2:#d95926; --viz-3:#199e70; --viz-4:#c98500; --viz-5:#d55181; --viz-6:#008300; --viz-7:#9085e9;
+  --viz-neutral:var(--ink-400);
+  /* смены: день — тёплый, ночь — холодный */
+  --shift-day:var(--viz-2); --shift-night:var(--viz-1);
+
+  /* Bklit UI читает эти переменные — привязываем их к токенам VOLT */
+  --chart-1:var(--viz-1); --chart-2:var(--viz-2); --chart-3:var(--viz-3); --chart-4:var(--viz-4); --chart-5:var(--viz-5);
+  --chart-background:var(--bg-surface);
+  --chart-foreground:var(--text-muted);
+  --chart-foreground-muted:var(--text-muted);
+  --chart-line-primary:var(--accent);
+  --chart-line-secondary:var(--viz-neutral);
+  --chart-crosshair:var(--text-muted);
+  --chart-grid:var(--border-subtle);
+  --chart-brush-border:var(--border-subtle);
+  --chart-tooltip-background:var(--bg-elevated);
+  --chart-tooltip-foreground:var(--text-primary);
+  --chart-tooltip-muted:var(--text-secondary);
+  --chart-marker-background:var(--bg-inset);
+  --chart-marker-border:var(--border-strong);
+  --chart-marker-foreground:var(--text-primary);
+  --chart-label:var(--text-secondary);
+  --chart-scale-01:var(--bg-inset);
+  --chart-scale-02:color-mix(in oklab,var(--accent) 22%,var(--bg-inset));
+  --chart-scale-03:color-mix(in oklab,var(--accent) 46%,var(--bg-inset));
+  --chart-scale-04:color-mix(in oklab,var(--accent) 72%,var(--bg-inset));
+  --chart-scale-05:var(--accent);
+  --chart-scale-pattern-color:var(--bg-surface);
+}
+:root[data-theme="light"]{
+  --viz-1:#2a78d6; --viz-2:#eb6834; --viz-3:#1baf7a; --viz-4:#eda100; --viz-5:#e87ba4; --viz-6:#008300; --viz-7:#4a3aa7;
+}
+@media (prefers-color-scheme:light){
+  :root:not([data-theme="dark"]){
+    --viz-1:#2a78d6; --viz-2:#eb6834; --viz-3:#1baf7a; --viz-4:#eda100; --viz-5:#e87ba4; --viz-6:#008300; --viz-7:#4a3aa7;
+  }
+}

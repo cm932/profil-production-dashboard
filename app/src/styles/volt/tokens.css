@@ -1,0 +1,137 @@
+/* VOLT Design System — tokens.css
+   Подключается первым, до Tailwind. Компоненты обращаются только
+   к семантическим переменным (--bg-*, --text-*, --accent, ...),
+   примитивы (--ink-*, --volt-*) меняются при ребрендинге.
+   Тема: dark по умолчанию; light — по prefers-color-scheme
+   или по <html data-theme="light">. */
+
+/* ============================================================
+   VOLT — design tokens
+   Tier 1: primitives · Tier 2: semantic · Tier 3: component
+   Dark-first. :root = dark. Light is redefined below.
+   ============================================================ */
+:root{
+  /* --- Tier 1. Primitives ------------------------------------ */
+  --ink-950:#0B0C0B; --ink-900:#101210; --ink-850:#151815; --ink-800:#1B1F1C;
+  --ink-700:#262B27; --ink-600:#363D38; --ink-400:#7B847D; --ink-300:#9AA39C;
+  --ink-100:#E8EDE9; --ink-000:#FFFFFF;
+  --paper-100:#F4F4F1; --paper-200:#EDEEE9; --paper-300:#E2E4DD; --paper-400:#C9CCC3;
+
+  --volt-100:#EEFBC9; --volt-300:#DCF78C; --volt-400:#CBF25C;
+  --volt-500:#B4E22E; --volt-600:#8FBA18; --volt-700:#5C7A0C;
+
+  --green-400:#3CCB7F; --green-700:#16794C;
+  --amber-400:#F0B429; --amber-700:#8A5A00;
+  --red-400:#FF5C46;   --red-700:#C2321E;
+  --blue-400:#5BA7F7;  --blue-700:#1D63B8;
+
+  /* --- Tier 2. Semantic (dark) ------------------------------- */
+  --bg-canvas:var(--ink-950);
+  --bg-surface:var(--ink-900);
+  --bg-elevated:var(--ink-850);
+  --bg-inset:var(--ink-800);
+  --bg-hover:rgba(255,255,255,.04);
+  --bg-active:rgba(255,255,255,.07);
+
+  --border-subtle:var(--ink-700);
+  --border-strong:var(--ink-600);
+  --border-accent:var(--volt-400);
+
+  --text-primary:var(--ink-100);
+  --text-secondary:var(--ink-300);
+  --text-muted:var(--ink-400);
+  --text-inverse:var(--ink-950);
+  --text-accent:var(--volt-400);
+
+  --accent:var(--volt-400);
+  --accent-hover:var(--volt-300);
+  --accent-pressed:var(--volt-500);
+  --accent-soft:color-mix(in oklab, var(--volt-400) 14%, transparent);
+  --on-accent:var(--ink-950);
+
+  --success:var(--green-400); --success-soft:color-mix(in oklab, var(--green-400) 16%, transparent);
+  --warning:var(--amber-400); --warning-soft:color-mix(in oklab, var(--amber-400) 16%, transparent);
+  --danger:var(--red-400);    --danger-soft:color-mix(in oklab, var(--red-400) 16%, transparent);
+  --info:var(--blue-400);     --info-soft:color-mix(in oklab, var(--blue-400) 16%, transparent);
+
+  --focus-ring:var(--volt-400);
+  --shadow-1:0 1px 2px rgba(0,0,0,.5);
+  --shadow-2:0 8px 24px -8px rgba(0,0,0,.7);
+  --shadow-3:0 24px 60px -20px rgba(0,0,0,.85);
+  --glow:0 0 0 1px color-mix(in oklab, var(--volt-400) 40%, transparent), 0 8px 32px -8px color-mix(in oklab, var(--volt-400) 35%, transparent);
+  --grid-line:color-mix(in oklab, var(--ink-100) 8%, transparent);
+
+  /* --- Type -------------------------------------------------- */
+  --font-display:"Unbounded","Golos Text",system-ui,sans-serif;
+  --font-ui:"Golos Text",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+
+  --text-2xs:.6875rem; --text-xs:.75rem;  --text-sm:.8125rem; --text-base:.9375rem;
+  --text-md:1.0625rem; --text-lg:1.25rem; --text-xl:1.5625rem; --text-2xl:2rem;
+  --text-3xl:2.625rem; --text-4xl:3.5rem;
+
+  --lh-tight:1.08; --lh-snug:1.25; --lh-normal:1.5; --lh-loose:1.7;
+  --track-tight:-.02em; --track-normal:0; --track-wide:.06em; --track-caps:.14em;
+
+  /* --- Space (base 4) ---------------------------------------- */
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:20px; --s-6:24px;
+  --s-8:32px; --s-10:40px; --s-12:48px; --s-16:64px; --s-20:80px; --s-24:96px;
+
+  /* --- Radius ------------------------------------------------ */
+  --r-xs:4px; --r-sm:6px; --r-md:10px; --r-lg:14px; --r-xl:20px; --r-pill:999px;
+
+  /* --- Motion ------------------------------------------------ */
+  --dur-1:120ms; --dur-2:200ms; --dur-3:320ms; --dur-4:600ms;
+  --ease-standard:cubic-bezier(.2,0,0,1);
+  --ease-out:cubic-bezier(.16,1,.3,1);
+  --ease-in:cubic-bezier(.7,0,.84,0);
+
+  --sidebar-w:248px;
+  color-scheme:dark;
+}
+/* Light theme — system preference, unless the viewer chose dark */
+@media (prefers-color-scheme:light){
+  :root:not([data-theme="dark"]){
+    --bg-canvas:var(--paper-100); --bg-surface:var(--ink-000); --bg-elevated:var(--ink-000);
+    --bg-inset:var(--paper-200); --bg-hover:rgba(11,12,11,.04); --bg-active:rgba(11,12,11,.07);
+    --border-subtle:var(--paper-300); --border-strong:var(--paper-400);
+    --text-primary:#0E110F; --text-secondary:#565C56; --text-muted:#646B63;
+    --text-inverse:var(--ink-000); --text-accent:var(--volt-700);
+    --accent:var(--volt-400); --accent-hover:var(--volt-500); --accent-pressed:var(--volt-600);
+    --success:var(--green-700); --warning:var(--amber-700); --danger:var(--red-700); --info:var(--blue-700);
+    --success-soft:color-mix(in oklab, var(--green-700) 12%, transparent);
+    --warning-soft:color-mix(in oklab, var(--amber-700) 12%, transparent);
+    --danger-soft:color-mix(in oklab, var(--red-700) 12%, transparent);
+    --info-soft:color-mix(in oklab, var(--blue-700) 12%, transparent);
+    --accent-soft:color-mix(in oklab, var(--volt-500) 22%, transparent);
+    --focus-ring:var(--volt-700);
+    --shadow-1:0 1px 2px rgba(14,17,15,.08);
+    --shadow-2:0 8px 24px -10px rgba(14,17,15,.18);
+    --shadow-3:0 24px 60px -24px rgba(14,17,15,.28);
+    --glow:0 0 0 1px color-mix(in oklab, var(--volt-600) 45%, transparent), 0 8px 28px -10px color-mix(in oklab, var(--volt-600) 30%, transparent);
+    --grid-line:color-mix(in oklab, #0E110F 8%, transparent);
+    color-scheme:light;
+  }
+}
+/* Light theme — explicit choice */
+:root[data-theme="light"]{
+  --bg-canvas:var(--paper-100); --bg-surface:var(--ink-000); --bg-elevated:var(--ink-000);
+  --bg-inset:var(--paper-200); --bg-hover:rgba(11,12,11,.04); --bg-active:rgba(11,12,11,.07);
+  --border-subtle:var(--paper-300); --border-strong:var(--paper-400);
+  --text-primary:#0E110F; --text-secondary:#565C56; --text-muted:#646B63;
+  --text-inverse:var(--ink-000); --text-accent:var(--volt-700);
+  --accent:var(--volt-400); --accent-hover:var(--volt-500); --accent-pressed:var(--volt-600);
+  --success:var(--green-700); --warning:var(--amber-700); --danger:var(--red-700); --info:var(--blue-700);
+  --success-soft:color-mix(in oklab, var(--green-700) 12%, transparent);
+  --warning-soft:color-mix(in oklab, var(--amber-700) 12%, transparent);
+  --danger-soft:color-mix(in oklab, var(--red-700) 12%, transparent);
+  --info-soft:color-mix(in oklab, var(--blue-700) 12%, transparent);
+  --accent-soft:color-mix(in oklab, var(--volt-500) 22%, transparent);
+  --focus-ring:var(--volt-700);
+  --shadow-1:0 1px 2px rgba(14,17,15,.08);
+  --shadow-2:0 8px 24px -10px rgba(14,17,15,.18);
+  --shadow-3:0 24px 60px -24px rgba(14,17,15,.28);
+  --glow:0 0 0 1px color-mix(in oklab, var(--volt-600) 45%, transparent), 0 8px 28px -10px color-mix(in oklab, var(--volt-600) 30%, transparent);
+  --grid-line:color-mix(in oklab, #0E110F 8%, transparent);
+  color-scheme:light;
+}
