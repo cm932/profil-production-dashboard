@@ -12,3 +12,5 @@ server/data/
 app/dist-sealed/
 # переносной Node.js для архива (≈ 80 МБ) — в репозиторий не входит, скачивается скриптом tools/get-runtime.ps1
 runtime/node.exe
+# Node.js для Mac (сжат xz, ≈ 50 МБ): кладётся в архив tools/make-zip.js
+runtime/mac/*.tar.xz
