@@ -1,6 +1,6 @@
 // Сборка архива для сдачи. Пишет zip сам (без сторонних программ), потому что нужны две вещи, которых нет у обычных
 // «отправить в сжатую папку» на Windows:
-//  · права на запуск (rwx) у ЗАПУСК.command — иначе Mac не запустит файл двойным щелчком («нет прав»);
+//  · права на запуск (rwx) у «Запуск сервера Mac.command» — иначе Mac не запустит файл двойным щелчком («нет прав»);
 //  · имена файлов в UTF-8 с пометкой Unix — кириллица одинаково читается в Windows и macOS.
 // В архив попадают файлы, отслеживаемые git, плюс переносной Node.js (runtime/node.exe и runtime/mac/*.tar.xz — они не в git: 200 МБ).
 // Запуск: node tools/make-zip.js [путь-к-архиву.zip]
@@ -23,8 +23,8 @@ const extra = ['runtime/node.exe', ...(fs.existsSync(path.join(ROOT, 'runtime/ma
 const all = [...new Set([...tracked, ...extra])].filter((f) => fs.existsSync(path.join(ROOT, f)) && fs.statSync(path.join(ROOT, f)).isFile())
 
 // Состав облегчённого архива (--slim): без исходников панели, тестов и служебных документов — они остаются в репозитории на GitHub
-const SLIM = [/^НАЧНИТЕ ОТСЮДА\.txt$/, /^ЗАПУСК\.(cmd|command)$/, /^ОПИСАНИЕ\.md$/, /^КОММЕНТАРИЙ\.md$/, /^server\//, /^runtime\//, /^Файлы для проекта\//]
-const RENAME = { 'panel/index.html': 'ОТКРЫТЬ БЕЗ СЕРВЕРА.html' } // зашифрованная панель — в корне, под понятным именем
+const SLIM = [/^Инструкция\.html$/, /^Запуск сервера (Windows\.cmd|Mac\.command)$/, /^server\//, /^runtime\//, /^Файлы для проекта\//]
+const RENAME = { 'panel/index.html': 'Открыть без сервера.html' } // зашифрованная панель — в корне, под понятным именем
 const entries = (SLIM_MODE ? [...all.filter((f) => SLIM.some((re) => re.test(f))), ...Object.keys(RENAME)] : all)
   .map((f) => ({ src: f, dest: SLIM_MODE ? (RENAME[f] ?? f) : f }))
 const files = entries.map((e) => e.src)

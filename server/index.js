@@ -80,7 +80,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   }
   console.log(`\nПанель «Профиль» запущена: ${s.url}`)
   console.log('Чтобы остановить сервер, закройте это окно или нажмите Ctrl+C.')
-  // --open: открыть панель в браузере (так запускают ЗАПУСК.cmd и ЗАПУСК.command из архива)
+  // --open: открыть панель в браузере (так запускают «Запуск сервера Windows.cmd» и «Запуск сервера Mac.command» из архива)
   if (process.argv.includes('--open') && process.env.PROFIL_NO_OPEN !== '1') {
     const { spawn } = await import('node:child_process')
     const p = process.platform

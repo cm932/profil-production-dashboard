@@ -7,7 +7,7 @@ if not exist "runtime\node.exe" (
   echo.
   echo  Не найден runtime\node.exe.
   echo  Распакуйте архив целиком: правой кнопкой - "Извлечь все",
-  echo  и запустите ЗАПУСК.cmd из распакованной папки.
+  echo  и запустите этот файл из распакованной папки (см. Инструкция.html).
   echo.
   pause
   exit /b 1

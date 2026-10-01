@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Инструкция — панель «Профиль»</title>
+<style>
+  :root { --bg:#f5f5f7; --card:#fff; --text:#1d1d1f; --muted:#6e6e73; --line:rgba(0,0,0,.09); --blue:#007aff; --blue-soft:rgba(0,122,255,.1); --ok:#248a3d; --warn:#a05a00; --warn-soft:rgba(255,149,0,.13); --shadow:0 1px 2px rgba(0,0,0,.04),0 8px 28px -10px rgba(0,0,0,.12); }
+  @media (prefers-color-scheme: dark) { :root { --bg:#121214; --card:#1c1c1e; --text:#f5f5f7; --muted:#aeaeb2; --line:rgba(255,255,255,.1); --blue:#0a84ff; --blue-soft:rgba(10,132,255,.2); --ok:#30d158; --warn:#ff9f0a; --warn-soft:rgba(255,159,10,.16); --shadow:0 0 0 .5px rgba(255,255,255,.06),0 8px 28px -10px rgba(0,0,0,.6); } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  main { max-width: 860px; margin: 0 auto; padding: 40px 20px 64px; }
+  h1 { font-size: 30px; line-height: 1.15; letter-spacing: -.022em; margin: 0 0 6px; }
+  h2 { font-size: 19px; letter-spacing: -.014em; margin: 0 0 12px; }
+  .sub { color: var(--muted); margin: 0 0 28px; }
+  .card { background: var(--card); border-radius: 18px; box-shadow: var(--shadow); padding: 22px 24px; margin-bottom: 18px; }
+  .step { display: flex; gap: 14px; align-items: flex-start; margin: 0 0 12px; }
+  .num { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--blue); color: #fff; font-weight: 700; font-size: 14px; display: grid; place-items: center; margin-top: 1px; }
+  .step p { margin: 0; }
+  .muted { color: var(--muted); }
+  /* вкладки */
+  .tabs { display: inline-flex; padding: 3px; border-radius: 11px; background: rgba(118,118,128,.14); margin-bottom: 20px; flex-wrap: wrap; }
+  .tabs button { border: 0; background: transparent; font: inherit; font-size: 15px; font-weight: 500; color: var(--text); padding: 7px 18px; border-radius: 9px; cursor: pointer; }
+  .tabs button[aria-selected="true"] { background: var(--card); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+  .tabs button:active { transform: scale(.97); }
+  .pane { display: none; } .pane.on { display: block; }
+  /* макет папки */
+  .folder { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin: 6px 0 16px; background: var(--bg); }
+  .folder-bar { padding: 8px 14px; font-size: 13px; color: var(--muted); border-bottom: 1px solid var(--line); background: var(--card); }
+  .file { display: flex; align-items: center; gap: 10px; padding: 8px 14px; font-size: 14.5px; border-bottom: 1px solid var(--line); position: relative; color: var(--muted); }
+  .file:last-child { border-bottom: 0; }
+  .file svg { flex: none; width: 18px; height: 18px; opacity: .7; }
+  .file.hit { background: var(--blue-soft); color: var(--text); font-weight: 600; box-shadow: inset 3px 0 0 var(--blue); }
+  .file.hit svg { opacity: 1; color: var(--blue); }
+  .click { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--blue); white-space: nowrap; }
+  .click svg { width: 20px; height: 20px; opacity: 1; animation: tap 1.6s ease-in-out infinite; }
+  @keyframes tap { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-4px,-4px) scale(.94); } }
+  @media (prefers-reduced-motion: reduce) { .click svg { animation: none; } }
+  .note { background: var(--warn-soft); border-radius: 12px; padding: 12px 14px; font-size: 14.5px; margin: 14px 0 0; }
+  .note b { color: var(--warn); }
+  .ok { color: var(--ok); font-weight: 600; }
+  img.shot { width: 100%; border-radius: 12px; border: 1px solid var(--line); display: block; margin: 8px 0 4px; }
+  figcaption { font-size: 13px; color: var(--muted); }
+  figure { margin: 0 0 14px; }
+  img.shot.small { max-width: 380px; margin-inline: auto; }
+  /* логины */
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th { text-align: left; font-size: 13px; color: var(--muted); font-weight: 600; padding: 0 10px 8px; }
+  td { padding: 9px 10px; border-top: 1px solid var(--line); vertical-align: middle; }
+  td.role { color: var(--muted); font-size: 14px; }
+  code { white-space: nowrap; font: 600 14.5px ui-monospace, "SF Mono", Menlo, Consolas, monospace; background: var(--bg); padding: 3px 8px; border-radius: 7px; border: 1px solid var(--line); }
+  .copy { border: 0; background: var(--blue-soft); color: var(--blue); font: inherit; font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 8px; cursor: pointer; }
+  .copy:active { transform: scale(.96); }
+  details { margin-top: 6px; } summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
+  details p { margin: 6px 0 4px; color: var(--muted); font-size: 14.5px; }
+  .foot { text-align: center; color: var(--muted); font-size: 13px; margin-top: 26px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Панель «Профиль»</h1>
+  <p class="sub">Учёт простоев и брака мебельной фабрики. Запуск занимает меньше минуты, устанавливать ничего не нужно.</p>
+
+  <section class="card">
+    <h2>Шаг 1. Распакуйте архив</h2>
+    <p class="step" style="margin:0"><span class="muted">Windows: правой кнопкой по архиву → «Извлечь всё». Mac: двойной щелчок по архиву. Работайте с распакованной папкой, а не с архивом.</span></p>
+  </section>
+
+  <section class="card">
+    <h2>Шаг 2. Выберите, как открыть</h2>
+    <div class="tabs" role="tablist" aria-label="Способ запуска">
+      <button role="tab" id="t-win" aria-selected="false" data-pane="win">Windows</button>
+      <button role="tab" id="t-mac" aria-selected="false" data-pane="mac">Mac</button>
+      <button role="tab" id="t-html" aria-selected="false" data-pane="html">Без сервера</button>
+    </div>
+
+    <!-- Windows -->
+    <div class="pane" id="p-win">
+      <div class="folder" aria-hidden="true">
+        <div class="folder-bar">Профиль_панель</div>
+        <div class="file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h10l6 6v10H4z"/></svg>Инструкция.html</div>
+        <div class="file hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h10l6 6v10H4z"/><path d="M8 14l3 2-3 2"/></svg>Запуск сервера Windows.cmd<span class="click"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 8-6 1.5L10 19z"/></svg>двойной щелчок</span></div>
+        <div class="file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h10l6 6v10H4z"/></svg>Запуск сервера Mac.command</div>
+        <div class="file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h10l6 6v10H4z"/></svg>Открыть без сервера.html</div>
+      </div>
+      <p class="step"><span class="num">1</span><span>Дважды щёлкните <b>Запуск сервера Windows.cmd</b>. Откроется чёрное окно сервера, а следом браузер.</span></p>
+      <p class="step"><span class="num">2</span><span>Войдите под любой учётной записью (список ниже). <b>Чёрное окно не закрывайте</b>, пока работаете.</span></p>
+      <div class="note"><b>Если Windows спросит «Защитник Windows запретил запуск…»:</b> нажмите «Подробнее» → «Выполнить в любом случае». Это стандартное окно для файлов из интернета.</div>
+    </div>
+
+    <!-- Mac -->
+    <div class="pane" id="p-mac">
+      <div class="folder" aria-hidden="true">
+        <div class="folder-bar">Профиль_панель</div>
+        <div class="file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h10l6 6v10H4z"/></svg>Инструкция.html</div>
+        <div class="file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h10l6 6v10H4z"/></svg>Запуск сервера Windows.cmd</div>
+        <div class="file hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h10l6 6v10H4z"/><path d="M8 14l3 2-3 2"/></svg>Запуск сервера Mac.command<span class="click"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 8-6 1.5L10 19z"/></svg>правая кнопка → «Открыть»</span></div>
+        <div class="file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h10l6 6v10H4z"/></svg>Открыть без сервера.html</div>
+      </div>
+      <p class="step"><span class="num">1</span><span>Нажмите на <b>Запуск сервера Mac.command</b> <b>правой кнопкой</b> (или Control + щелчок) → <b>«Открыть»</b> → в окне ещё раз <b>«Открыть»</b>. Это нужно один раз: так macOS разрешает запуск файлов из интернета. Дальше работает двойной щелчок.</span></p>
+      <p class="step"><span class="num">2</span><span>Откроется окно «Терминала» и браузер. При первом запуске пауза несколько секунд: распаковывается встроенный Node.js.</span></p>
+      <p class="step"><span class="num">3</span><span>Войдите под любой учётной записью (список ниже). <b>Окно «Терминала» не закрывайте</b>, пока работаете.</span></p>
+      <div class="note"><b>Не запускается?</b> Откройте «Терминал», введите <code>bash</code> и пробел, перетащите файл <b>Запуск сервера Mac.command</b> в окно и нажмите Enter. Если и это не помогло — используйте вкладку «Без сервера».</div>
+    </div>
+
+    <!-- без сервера -->
+    <div class="pane" id="p-html">
+      <div class="folder" aria-hidden="true">
+        <div class="folder-bar">Профиль_панель</div>
+        <div class="file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h10l6 6v10H4z"/></svg>Инструкция.html</div>
+        <div class="file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h10l6 6v10H4z"/></svg>Запуск сервера Windows.cmd</div>
+        <div class="file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h10l6 6v10H4z"/></svg>Запуск сервера Mac.command</div>
+        <div class="file hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h10l6 6v10H4z"/><circle cx="12" cy="13" r="3"/></svg>Открыть без сервера.html<span class="click"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 8-6 1.5L10 19z"/></svg>двойной щелчок</span></div>
+      </div>
+      <p class="step"><span class="num">1</span><span>Дважды щёлкните <b>Открыть без сервера.html</b>. Файл откроется в браузере (подходят Safari, Chrome, Edge).</span></p>
+      <p class="step"><span class="num">2</span><span>Войдите под любой учётной записью (список ниже). Данные внутри файла зашифрованы, и логин с паролем служат ключом.</span></p>
+      <div class="note"><b>Что отличается:</b> в этом варианте нет админ-панели и правки не сохраняются. Остальное то же самое. Подходит для любой системы и не требует сервера.</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Шаг 3. Войдите</h2>
+    <figure>
+      <img class="shot small" alt="Окно входа" src="{{LOGIN}}">
+      <figcaption>Окно входа: введите логин и пароль и нажмите «Войти».</figcaption>
+    </figure>
+    <table>
+      <thead><tr><th>Логин</th><th>Пароль</th><th>Роль</th><th></th></tr></thead>
+      <tbody>
+        <tr><td><code>director</code></td><td><code>Director-2026!</code></td><td class="role">Директор — всё, включая деньги. <b>Начните с него.</b></td><td><button class="copy" data-copy="Director-2026!">Копировать</button></td></tr>
+        <tr><td><code>admin</code></td><td><code>Admin-2026!</code></td><td class="role">Администратор — ещё и «Админ-панель» (только в режиме с сервером)</td><td><button class="copy" data-copy="Admin-2026!">Копировать</button></td></tr>
+        <tr><td><code>chief1</code></td><td><code>Chief1-2026!</code></td><td class="role">Начальник цеха 1 — только свой цех</td><td><button class="copy" data-copy="Chief1-2026!">Копировать</button></td></tr>
+        <tr><td><code>chief2</code></td><td><code>Chief2-2026!</code></td><td class="role">Начальник цеха 2 — только свой цех</td><td><button class="copy" data-copy="Chief2-2026!">Копировать</button></td></tr>
+        <tr><td><code>otk</code></td><td><code>Otk-2026!</code></td><td class="role">Оператор ОТК — только брак</td><td><button class="copy" data-copy="Otk-2026!">Копировать</button></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>Что вы увидите</h2>
+    <figure>
+      <img class="shot" alt="Главный экран панели" src="{{SUMMARY}}">
+      <figcaption>Главный экран («Сводка»). При первом входе сам запускается короткий тур; позже — кнопка «Как пользоваться» внизу слева.</figcaption>
+    </figure>
+    <p class="step" style="margin:0"><span class="muted">Чтобы увидеть разницу ролей: нажмите «Выйти» внизу слева и войдите, например, как <code>chief1</code>. Начальник цеха видит только свой цех и не видит деньги. Администратор в режиме с сервером управляет пользователями и видит журнал действий.</span></p>
+  </section>
+
+  <details class="card">
+    <summary>Если что-то пошло не так</summary>
+    <p><b>Пишет «неверный логин или пароль».</b> Пароли указаны выше с учётом регистра. После 5 неудачных попыток вход блокируется на 15 минут (это защита от подбора).</p>
+    <p><b>Браузер не открылся сам.</b> Откройте адрес, который написан в окне сервера (обычно <code>http://127.0.0.1:3000</code>).</p>
+    <p><b>Порт занят.</b> Сервер сам выберет свободный порт и напишет адрес в окне.</p>
+    <p><b>Закрыли чёрное окно по ошибке.</b> Сервер остановился: запустите его снова тем же файлом.</p>
+  </details>
+
+  <p class="foot">Исходный код и подробная документация: github.com/cm932/profil-production-dashboard (ветка v5-apple)</p>
+</main>
+<script>
+(function () {
+  var tabs = document.querySelectorAll('.tabs button');
+  function show(id) {
+    tabs.forEach(function (b) { b.setAttribute('aria-selected', b.dataset.pane === id ? 'true' : 'false'); });
+    ['win', 'mac', 'html'].forEach(function (k) { document.getElementById('p-' + k).classList.toggle('on', k === id); });
+  }
+  tabs.forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.pane); }); });
+  var mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+  show(mac ? 'mac' : 'win');
+  document.querySelectorAll('.copy').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var t = b.dataset.copy, old = b.textContent;
+      function done() { b.textContent = 'Скопировано'; setTimeout(function () { b.textContent = old; }, 1400); }
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, function () {});
+      else { var i = document.createElement('input'); i.value = t; document.body.appendChild(i); i.select(); try { document.execCommand('copy'); done(); } catch (e) {} document.body.removeChild(i); }
+    });
+  });
+})();
+</script>
+</body>
+</html>
